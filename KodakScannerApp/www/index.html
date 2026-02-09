@@ -1,0 +1,86 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Kodak Scanmate i1150</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Kodak Scanmate i1150</h1>
+      <div class="status" id="status">Idle</div>
+    </header>
+
+    <section class="panel">
+      <h2>Scanner Settings</h2>
+      <div class="grid">
+        <label>
+          Device
+          <select id="deviceSelect"></select>
+        </label>
+        <label>
+          DPI
+          <input id="dpi" type="number" value="300" min="75" max="1200" />
+        </label>
+        <label>
+          Color Mode
+          <select id="colorMode">
+            <option value="color">Color</option>
+            <option value="gray">Grayscale</option>
+            <option value="bw">Black & White</option>
+          </select>
+        </label>
+        <label>
+          Duplex
+          <select id="duplex">
+            <option value="false">Off</option>
+            <option value="true">On</option>
+          </select>
+        </label>
+        <label>
+          Max Pages
+          <input id="maxPages" type="number" value="100" min="1" max="500" />
+        </label>
+      </div>
+      <div class="actions">
+        <button id="scanBtn">Start Scan</button>
+        <button id="clearBtn">Clear</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Export</h2>
+      <div class="grid">
+        <label>
+          Output Format
+          <select id="format">
+            <option value="pdf">PDF (multi-page)</option>
+            <option value="tiff">TIFF (multi-page)</option>
+            <option value="jpg">JPG (separate files)</option>
+            <option value="png">PNG (separate files)</option>
+          </select>
+        </label>
+        <label>
+          Output Folder
+          <input id="outputPath" type="text" placeholder="C:\\Users\\...\\Documents\\Scans" />
+        </label>
+        <label>
+          Base Name
+          <input id="baseName" type="text" value="scan" />
+        </label>
+      </div>
+      <div class="actions">
+        <button id="exportBtn">Export</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Scanned Pages</h2>
+      <ul id="files"></ul>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
