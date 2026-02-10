@@ -79,7 +79,7 @@ namespace KodakScannerApp
                 _status.Message = "Scanning...";
             }
 
-            Task.Run(() =>
+            var thread = new System.Threading.Thread(() =>
             {
                 try
                 {
@@ -112,6 +112,9 @@ namespace KodakScannerApp
                     }
                 }
             });
+            thread.IsBackground = true;
+            thread.SetApartmentState(System.Threading.ApartmentState.STA);
+            thread.Start();
 
             return new ApiResult { Ok = true, Message = "Scan started" };
         }
