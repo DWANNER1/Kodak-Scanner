@@ -10,7 +10,7 @@ namespace KodakScannerApp
         private readonly object _lock = new object();
         private readonly string _outputRoot;
         private readonly WiaScanner _scanner;
-        private readonly List<string> _scannedFiles;
+        private readonly List<PageItem> _pages;
         private ScanStatus _status;
         private bool _scanInProgress;
         private string _lastJobDir;
@@ -21,8 +21,8 @@ namespace KodakScannerApp
         {
             _outputRoot = outputRoot;
             _scanner = new WiaScanner();
-            _scannedFiles = new List<string>();
-            _status = new ScanStatus { State = "idle", Message = "Ready", PagesScanned = 0, Files = new List<string>() };
+            _pages = new List<PageItem>();
+            _status = new ScanStatus { State = "idle", Message = "Ready", PagesScanned = 0, Pages = new List<PageItem>() };
         }
 
         public List<DeviceInfoDto> ListDevices()
@@ -39,7 +39,7 @@ namespace KodakScannerApp
                     State = _status.State,
                     Message = _status.Message,
                     PagesScanned = _status.PagesScanned,
-                    Files = new List<string>(_scannedFiles),
+                    Pages = new List<PageItem>(_pages),
                     OutputRoot = _outputRoot,
                     CurrentJobDir = _lastJobDir
                 };
@@ -50,7 +50,12 @@ namespace KodakScannerApp
         {
             lock (_lock)
             {
-                return new List<string>(_scannedFiles);
+                var list = new List<string>();
+                foreach (var page in _pages)
+                {
+                    list.Add(page.Path);
+                }
+                return list;
             }
         }
 
@@ -96,10 +101,10 @@ namespace KodakScannerApp
                     {
                         lock (_lock)
                         {
-                            _scannedFiles.Add(path);
+                            _pages.Add(new PageItem { Id = Guid.NewGuid().ToString("N"), Path = path });
                             _status.State = "scanning";
-                            _status.Message = "Scanning... (" + _scannedFiles.Count + ")";
-                            _status.PagesScanned = _scannedFiles.Count;
+                            _status.Message = "Scanning... (" + _pages.Count + ")";
+                            _status.PagesScanned = _pages.Count;
                         }
                     });
 
@@ -107,7 +112,7 @@ namespace KodakScannerApp
                     {
                         _status.State = "done";
                         _status.Message = "Scan complete";
-                        _status.PagesScanned = _scannedFiles.Count;
+                        _status.PagesScanned = _pages.Count;
                     }
                 }
                 catch (Exception ex)
@@ -226,27 +231,29 @@ namespace KodakScannerApp
         {
             lock (_lock)
             {
-                _scannedFiles.Clear();
+                _pages.Clear();
                 _status.State = "idle";
                 _status.Message = "Ready";
                 _status.PagesScanned = 0;
             }
         }
 
-        public ApiResult DeleteFile(string filePath, int? index, string folderPath)
+        public ApiResult DeleteFile(string id)
         {
-            if (!string.IsNullOrWhiteSpace(folderPath) && index.HasValue)
+            if (string.IsNullOrWhiteSpace(id))
             {
-                filePath = ResolvePathByIndex(folderPath, index.Value);
-            }
-
-            if (string.IsNullOrWhiteSpace(filePath))
-            {
-                return new ApiResult { Ok = false, Message = "Missing file path" };
+                return new ApiResult { Ok = false, Message = "Missing page id" };
             }
 
             lock (_lock)
             {
+                var page = _pages.Find(p => string.Equals(p.Id, id, StringComparison.OrdinalIgnoreCase));
+                if (page == null)
+                {
+                    return new ApiResult { Ok = false, Message = "Page not found" };
+                }
+
+                var filePath = page.Path;
                 if (!IsUnderOutputRoot(filePath))
                 {
                     return new ApiResult { Ok = false, Message = "Invalid file path" };
@@ -260,54 +267,38 @@ namespace KodakScannerApp
                 {
                     File.Delete(filePath);
                     var folder = Path.GetDirectoryName(filePath) ?? "";
-                    var sameFolder = new List<string>();
-                    var otherFolders = new List<string>();
-                    foreach (var f in _scannedFiles)
+                    var sameFolder = new List<PageItem>();
+                    var otherFolders = new List<PageItem>();
+                    foreach (var p in _pages)
                     {
-                        if (string.Equals(f, filePath, StringComparison.OrdinalIgnoreCase))
+                        if (string.Equals(p.Id, id, StringComparison.OrdinalIgnoreCase))
                         {
                             continue;
                         }
-                        if (string.Equals(Path.GetDirectoryName(f), folder, StringComparison.OrdinalIgnoreCase))
+                        if (string.Equals(Path.GetDirectoryName(p.Path), folder, StringComparison.OrdinalIgnoreCase))
                         {
-                            sameFolder.Add(f);
+                            sameFolder.Add(p);
                         }
                         else
                         {
-                            otherFolders.Add(f);
+                            otherFolders.Add(p);
                         }
                     }
 
-                    sameFolder.Sort(ComparePageNames);
-                    var updated = RenumberFilesInFolder(folder, sameFolder);
-                    _scannedFiles.Clear();
-                    _scannedFiles.AddRange(otherFolders);
-                    _scannedFiles.AddRange(updated);
-                    _scannedFiles.Sort(CompareFolderThenPage);
-                    _status.PagesScanned = _scannedFiles.Count;
-                    return new ApiResult { Ok = true, Message = "Deleted", Files = new List<string>(_scannedFiles) };
+                    sameFolder.Sort((a, b) => ComparePageNames(a.Path, b.Path));
+                    RenumberPagesInFolder(folder, sameFolder);
+                    _pages.Clear();
+                    _pages.AddRange(otherFolders);
+                    _pages.AddRange(sameFolder);
+                    _pages.Sort((a, b) => CompareFolderThenPage(a.Path, b.Path));
+                    _status.PagesScanned = _pages.Count;
+                    return new ApiResult { Ok = true, Message = "Deleted" };
                 }
                 catch (Exception ex)
                 {
                     return new ApiResult { Ok = false, Message = ex.Message };
                 }
             }
-        }
-
-        private string ResolvePathByIndex(string folder, int index)
-        {
-            if (index < 0) return null;
-            var list = new List<string>();
-            foreach (var f in _scannedFiles)
-            {
-                if (string.Equals(Path.GetDirectoryName(f), folder, StringComparison.OrdinalIgnoreCase))
-                {
-                    list.Add(f);
-                }
-            }
-            list.Sort(ComparePageNames);
-            if (index >= list.Count) return null;
-            return list[index];
         }
 
         public ApiResult RotateFile(string filePath, string direction)
@@ -356,38 +347,56 @@ namespace KodakScannerApp
             }
         }
 
-        public ApiResult ReorderFiles(List<string> orderedFiles)
+        public ApiResult ReorderFiles(List<string> orderedIds)
         {
-            if (orderedFiles == null || orderedFiles.Count == 0)
+            if (orderedIds == null || orderedIds.Count == 0)
             {
-                return new ApiResult { Ok = false, Message = "No files to reorder" };
+                return new ApiResult { Ok = false, Message = "No pages to reorder" };
             }
 
-            var folder = Path.GetDirectoryName(orderedFiles[0]) ?? "";
-            foreach (var file in orderedFiles)
+            var first = _pages.Find(p => string.Equals(p.Id, orderedIds[0], StringComparison.OrdinalIgnoreCase));
+            if (first == null)
             {
-                if (!IsUnderOutputRoot(file) || !File.Exists(file))
-                {
-                    return new ApiResult { Ok = false, Message = "Invalid file path" };
-                }
-                if (!string.Equals(Path.GetDirectoryName(file), folder, StringComparison.OrdinalIgnoreCase))
-                {
-                    return new ApiResult { Ok = false, Message = "Files must be in the same folder" };
-                }
+                return new ApiResult { Ok = false, Message = "Page not found" };
             }
+            var folder = Path.GetDirectoryName(first.Path) ?? "";
 
             try
             {
-                var newList = RenumberFilesInFolder(folder, orderedFiles);
-                lock (_lock)
+                var orderedPages = new List<PageItem>();
+                foreach (var id in orderedIds)
                 {
-                    _scannedFiles.Clear();
-                    _scannedFiles.AddRange(newList);
-                    _scannedFiles.Sort(CompareFolderThenPage);
-                    _status.PagesScanned = _scannedFiles.Count;
+                    var page = _pages.Find(p => string.Equals(p.Id, id, StringComparison.OrdinalIgnoreCase));
+                    if (page == null)
+                    {
+                        return new ApiResult { Ok = false, Message = "Page not found" };
+                    }
+                    if (!string.Equals(Path.GetDirectoryName(page.Path), folder, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return new ApiResult { Ok = false, Message = "Pages must be in the same folder" };
+                    }
+                    orderedPages.Add(page);
                 }
 
-                return new ApiResult { Ok = true, Message = "Reordered", Files = newList };
+                RenumberPagesInFolder(folder, orderedPages);
+                lock (_lock)
+                {
+                    var other = new List<PageItem>();
+                    foreach (var page in _pages)
+                    {
+                        if (!string.Equals(Path.GetDirectoryName(page.Path), folder, StringComparison.OrdinalIgnoreCase))
+                        {
+                            other.Add(page);
+                        }
+                    }
+                    _pages.Clear();
+                    _pages.AddRange(other);
+                    _pages.AddRange(orderedPages);
+                    _pages.Sort((a, b) => CompareFolderThenPage(a.Path, b.Path));
+                    _status.PagesScanned = _pages.Count;
+                }
+
+                return new ApiResult { Ok = true, Message = "Reordered" };
             }
             catch (Exception ex)
             {
@@ -395,29 +404,26 @@ namespace KodakScannerApp
             }
         }
 
-        private static List<string> RenumberFilesInFolder(string folder, List<string> orderedFiles)
+        private static void RenumberPagesInFolder(string folder, List<PageItem> orderedPages)
         {
             var tempMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            for (int i = 0; i < orderedFiles.Count; i++)
+            for (int i = 0; i < orderedPages.Count; i++)
             {
-                var file = orderedFiles[i];
+                var file = orderedPages[i].Path;
                 var ext = Path.GetExtension(file);
                 var temp = Path.Combine(folder, Guid.NewGuid().ToString("N") + ext);
                 File.Move(file, temp);
                 tempMap[file] = temp;
             }
 
-            var newList = new List<string>();
-            for (int i = 0; i < orderedFiles.Count; i++)
+            for (int i = 0; i < orderedPages.Count; i++)
             {
-                var original = orderedFiles[i];
+                var original = orderedPages[i].Path;
                 var ext = Path.GetExtension(original);
                 var newPath = Path.Combine(folder, "page_" + (i + 1).ToString("000") + ext);
                 File.Move(tempMap[original], newPath);
-                newList.Add(newPath);
+                orderedPages[i].Path = newPath;
             }
-
-            return newList;
         }
 
         private static int ComparePageNames(string left, string right)

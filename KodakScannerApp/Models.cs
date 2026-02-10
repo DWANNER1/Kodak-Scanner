@@ -29,9 +29,7 @@ namespace KodakScannerApp
 
     public class DeleteRequest
     {
-        public string Path { get; set; }
-        public int? Index { get; set; }
-        public string Folder { get; set; }
+        public string Id { get; set; }
     }
 
     public class RotateRequest
@@ -42,7 +40,13 @@ namespace KodakScannerApp
 
     public class ReorderRequest
     {
-        public List<string> Files { get; set; }
+        public List<string> Ids { get; set; }
+    }
+
+    public class PageItem
+    {
+        public string Id { get; set; }
+        public string Path { get; set; }
     }
 
     public class ApiResult
@@ -57,7 +61,7 @@ namespace KodakScannerApp
         public string State { get; set; }
         public string Message { get; set; }
         public int PagesScanned { get; set; }
-        public List<string> Files { get; set; }
+        public List<PageItem> Pages { get; set; }
         public string OutputRoot { get; set; }
         public string CurrentJobDir { get; set; }
     }

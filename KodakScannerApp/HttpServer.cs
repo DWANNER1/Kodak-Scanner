@@ -191,7 +191,7 @@ namespace KodakScannerApp
                 {
                     var body = ReadBody(context.Request);
                     var request = _json.Deserialize<DeleteRequest>(body);
-                    var result = _scannerService.DeleteFile(request?.Path, request?.Index, request?.Folder);
+                    var result = _scannerService.DeleteFile(request?.Id);
                     WriteJson(context, result);
                     return;
                 }
@@ -209,7 +209,7 @@ namespace KodakScannerApp
                 {
                     var body = ReadBody(context.Request);
                     var request = _json.Deserialize<ReorderRequest>(body);
-                    var result = _scannerService.ReorderFiles(request?.Files);
+                    var result = _scannerService.ReorderFiles(request?.Ids);
                     WriteJson(context, result);
                     return;
                 }

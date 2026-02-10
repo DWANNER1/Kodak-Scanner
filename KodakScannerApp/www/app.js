@@ -95,17 +95,17 @@
       }
 
       setStatus(state, message, tone);
-      if (status.Files) {
+      if (status.Pages) {
         if (isDragging) {
           return;
         }
-        var nextKey = status.Files.join("|");
+        var nextKey = status.Pages.map(function (p) { return p.Id + ":" + p.Path; }).join("|");
         lastFilesKey = nextKey;
         filesEl.innerHTML = "";
         var previousCount = parseInt(filesEl.dataset.count || "0", 10);
-        filesEl.dataset.count = status.Files.length.toString();
-        status.Files.forEach(function (f, index) {
-          var filePath = f;
+        filesEl.dataset.count = status.Pages.length.toString();
+        status.Pages.forEach(function (page, index) {
+          var filePath = page.Path;
           var li = document.createElement("li");
           var img = document.createElement("img");
           img.className = "file-thumb";
@@ -118,8 +118,7 @@
           ball.className = "page-ball";
           ball.textContent = (index + 1).toString();
           ball.setAttribute("draggable", "true");
-          ball.dataset.path = filePath;
-          ball.dataset.index = index.toString();
+          ball.dataset.id = page.Id;
 
           var zoomOut = buildIconButton("Zoom out", "zoom_out");
           var zoomIn = buildIconButton("Zoom in", "zoom_in");
@@ -172,10 +171,7 @@
           });
           del.addEventListener("click", function () {
             if (!confirm("Delete this scan?")) return;
-            var folder = filePath.replace(/\\[^\\]+$/, "");
-            var nodes = Array.prototype.slice.call(filesEl.querySelectorAll("li[data-path]"));
-            var domIndex = nodes.indexOf(li);
-            apiPost("/api/delete", { Path: filePath, Index: domIndex, Folder: folder }).then(function (res) {
+            apiPost("/api/delete", { Id: page.Id }).then(function (res) {
               if (!res.Ok) {
                 alert(res.Message || "Delete failed");
                 return;
@@ -205,14 +201,14 @@
             scrollState[filePath] = { left: wrap.scrollLeft, top: wrap.scrollTop };
           });
 
-          li.dataset.path = filePath;
+          li.dataset.id = page.Id;
           li.draggable = false;
           ball.addEventListener("dragstart", function (e) {
             isDragging = true;
-            dragPath = filePath;
+            dragPath = page.Id;
             li.classList.add("dragging-card");
             e.dataTransfer.effectAllowed = "move";
-            e.dataTransfer.setData("text/plain", filePath);
+            e.dataTransfer.setData("text/plain", page.Id);
             if (e.dataTransfer.setDragImage) {
               e.dataTransfer.setDragImage(li, li.offsetWidth / 2, 20);
             }
@@ -226,7 +222,7 @@
           li.appendChild(actions);
           filesEl.appendChild(li);
         });
-        if (status.Files.length > previousCount) {
+        if (status.Pages.length > previousCount) {
           setTimeout(function () {
             window.scrollTo(0, document.body.scrollHeight);
           }, 0);
@@ -336,7 +332,7 @@
     filesEl.addEventListener("dragover", function (e) {
       if (!dragPath) return;
       var li = e.target.closest("li");
-      if (!li || !li.dataset.path) return;
+      if (!li || !li.dataset.id) return;
       e.preventDefault();
       e.dataTransfer.dropEffect = "move";
     });
@@ -344,20 +340,20 @@
     filesEl.addEventListener("drop", function (e) {
       if (!dragPath) return;
       var li = e.target.closest("li");
-      if (!li || !li.dataset.path) return;
+      if (!li || !li.dataset.id) return;
       e.preventDefault();
 
-      var targetPath = li.dataset.path || "";
-      if (!targetPath || targetPath === dragPath) {
+      var targetId = li.dataset.id || "";
+      if (!targetId || targetId === dragPath) {
         dragPath = "";
         return;
       }
 
-      var ordered = Array.prototype.map.call(filesEl.querySelectorAll("li[data-path]"), function (liItem) {
-        return liItem.dataset.path;
+      var ordered = Array.prototype.map.call(filesEl.querySelectorAll("li[data-id]"), function (liItem) {
+        return liItem.dataset.id;
       });
       var fromIndex = ordered.indexOf(dragPath);
-      var toIndex = ordered.indexOf(targetPath);
+      var toIndex = ordered.indexOf(targetId);
       if (fromIndex === -1 || toIndex === -1) {
         dragPath = "";
         return;
@@ -367,7 +363,7 @@
 
       dragPath = "";
 
-      apiPost("/api/reorder", { Files: ordered }).then(function (res) {
+      apiPost("/api/reorder", { Ids: ordered }).then(function (res) {
         if (!res.Ok) {
           alert(res.Message || "Reorder failed");
         }
