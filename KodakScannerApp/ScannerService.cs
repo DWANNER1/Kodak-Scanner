@@ -291,7 +291,6 @@ namespace KodakScannerApp
                     }
 
                     sameFolder.Sort((a, b) => ComparePageNames(a.Path, b.Path));
-                    RenumberPagesInFolder(folder, sameFolder);
                     _pages.Clear();
                     _pages.AddRange(otherFolders);
                     _pages.AddRange(sameFolder);
@@ -385,7 +384,6 @@ namespace KodakScannerApp
                     orderedPages.Add(page);
                 }
 
-                RenumberPagesInFolder(folder, orderedPages);
                 lock (_lock)
                 {
                     var rebuilt = new List<PageItem>();
@@ -412,29 +410,7 @@ namespace KodakScannerApp
             }
         }
 
-        private static void RenumberPagesInFolder(string folder, List<PageItem> orderedPages)
-        {
-            var tempMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            for (int i = 0; i < orderedPages.Count; i++)
-            {
-                var file = orderedPages[i].Path;
-                var ext = Path.GetExtension(file);
-                var temp = Path.Combine(folder, Guid.NewGuid().ToString("N") + ext);
-                File.Move(file, temp);
-                tempMap[file] = temp;
-            }
-
-            for (int i = 0; i < orderedPages.Count; i++)
-            {
-                var original = orderedPages[i].Path;
-                var ext = Path.GetExtension(original);
-                var newPath = Path.Combine(folder, "page_" + (i + 1).ToString("000") + ext);
-                File.Move(tempMap[original], newPath);
-                orderedPages[i].Path = newPath;
-            }
-
-            Logger.Log("renumbered folder=" + folder + " count=" + orderedPages.Count);
-        }
+        // No filename renumbering; order is tracked in-memory by PageItem list.
 
         private static int ComparePageNames(string left, string right)
         {

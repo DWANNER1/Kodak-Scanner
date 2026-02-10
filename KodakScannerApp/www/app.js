@@ -400,6 +400,17 @@
       dragPath = "";
 
       logEvent("drop reorder", { from: fromId, to: targetId, ordered: ordered });
+      // Optimistic UI reorder
+      var map = {};
+      filesEl.querySelectorAll("li[data-id]").forEach(function (node) {
+        map[node.dataset.id] = node;
+      });
+      filesEl.innerHTML = "";
+      ordered.forEach(function (id) {
+        if (map[id]) {
+          filesEl.appendChild(map[id]);
+        }
+      });
       apiPost("/api/reorder", { Ids: ordered }).then(function (res) {
         logEvent("reorder result", res);
         if (!res.Ok) {
