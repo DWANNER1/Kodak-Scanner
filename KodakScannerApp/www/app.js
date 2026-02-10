@@ -28,6 +28,8 @@
   var imageVersion = {};
   var lastFilesKey = "";
   var isDragging = false;
+  var dragHandleActive = false;
+  var dragPath = "";
 
   function setActiveTab(tabName) {
     navItems.forEach(function (item) {
@@ -118,6 +120,7 @@
           ball.textContent = (index + 1).toString();
           ball.setAttribute("draggable", "true");
           ball.dataset.path = filePath;
+          ball.dataset.index = index.toString();
 
           var zoomOut = buildIconButton("Zoom out", "zoom_out");
           var zoomIn = buildIconButton("Zoom in", "zoom_in");
@@ -136,6 +139,11 @@
           img.dataset.scale = "1";
           img.style.transformOrigin = "center center";
           img.style.transition = "transform 0.15s ease";
+
+          var wrap = document.createElement("div");
+          wrap.className = "file-thumb-wrap";
+          wrap.appendChild(img);
+          enableDragScroll(wrap);
 
           var scale = zoomState[filePath] || 1;
           img.dataset.scale = scale.toString();
@@ -165,7 +173,7 @@
           });
           del.addEventListener("click", function () {
             if (!confirm("Delete this scan?")) return;
-            apiPost("/api/delete", { Path: filePath }).then(function (res) {
+            apiPost("/api/delete", { Path: filePath, Index: index, Folder: lastJobDir || "" }).then(function (res) {
               if (!res.Ok) {
                 alert(res.Message || "Delete failed");
                 return;
@@ -185,11 +193,6 @@
           actions.appendChild(rotateRight);
           actions.appendChild(del);
 
-          var wrap = document.createElement("div");
-          wrap.className = "file-thumb-wrap";
-          wrap.appendChild(img);
-          enableDragScroll(wrap);
-
           var savedScroll = scrollState[filePath];
           if (savedScroll) {
             wrap.scrollLeft = savedScroll.left;
@@ -201,6 +204,31 @@
           });
 
           li.dataset.path = filePath;
+          li.draggable = true;
+          li.addEventListener("dragstart", function (e) {
+            if (!dragHandleActive) {
+              e.preventDefault();
+              return;
+            }
+            isDragging = true;
+            e.dataTransfer.effectAllowed = "move";
+            dragPath = filePath;
+            e.dataTransfer.setData("text/plain", filePath);
+            li.classList.add("dragging-card");
+          });
+          li.addEventListener("dragend", function () {
+            isDragging = false;
+            dragHandleActive = false;
+            dragPath = "";
+            li.classList.remove("dragging-card");
+          });
+
+          ball.addEventListener("mousedown", function () {
+            dragHandleActive = true;
+          });
+          ball.addEventListener("mouseup", function () {
+            dragHandleActive = false;
+          });
           li.appendChild(wrap);
           li.appendChild(actions);
           filesEl.appendChild(li);
@@ -311,49 +339,33 @@
   }
 
   function enableReorder() {
-    var dragPath = "";
 
-    filesEl.addEventListener("dragstart", function (e) {
-      var target = e.target;
-      if (!target || !target.classList.contains("page-ball")) return;
-      dragPath = target.dataset.path || "";
-      target.classList.add("dragging");
-      isDragging = true;
-      e.dataTransfer.effectAllowed = "move";
-      e.dataTransfer.setData("text/plain", dragPath);
-    });
+    filesEl.addEventListener("dragstart", function () {});
 
-    filesEl.addEventListener("dragend", function (e) {
-      var target = e.target;
-      if (target && target.classList.contains("page-ball")) {
-        target.classList.remove("dragging");
-      }
-      dragPath = "";
-      isDragging = false;
-    });
+    filesEl.addEventListener("dragend", function () {});
 
     filesEl.addEventListener("dragover", function (e) {
       if (!dragPath) return;
-      var ball = e.target.closest(".page-ball");
-      if (!ball) return;
+      var li = e.target.closest("li");
+      if (!li || !li.dataset.path) return;
       e.preventDefault();
       e.dataTransfer.dropEffect = "move";
     });
 
     filesEl.addEventListener("drop", function (e) {
       if (!dragPath) return;
-      var ball = e.target.closest(".page-ball");
-      if (!ball) return;
+      var li = e.target.closest("li");
+      if (!li || !li.dataset.path) return;
       e.preventDefault();
 
-      var targetPath = ball.dataset.path || "";
+      var targetPath = li.dataset.path || "";
       if (!targetPath || targetPath === dragPath) {
         dragPath = "";
         return;
       }
 
-      var ordered = Array.prototype.map.call(filesEl.querySelectorAll("li[data-path]"), function (li) {
-        return li.dataset.path;
+      var ordered = Array.prototype.map.call(filesEl.querySelectorAll("li[data-path]"), function (liItem) {
+        return liItem.dataset.path;
       });
       var fromIndex = ordered.indexOf(dragPath);
       var toIndex = ordered.indexOf(targetPath);
@@ -364,6 +376,8 @@
       ordered.splice(fromIndex, 1);
       ordered.splice(toIndex, 0, dragPath);
 
+      dragPath = "";
+
       apiPost("/api/reorder", { Files: ordered }).then(function (res) {
         if (!res.Ok) {
           alert(res.Message || "Reorder failed");
@@ -371,8 +385,6 @@
         lastFilesKey = "";
         refreshStatus();
       });
-
-      dragPath = "";
     });
   }
 

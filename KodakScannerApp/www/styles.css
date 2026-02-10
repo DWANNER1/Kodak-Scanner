@@ -376,6 +376,11 @@ button.ghost:hover {
   cursor: grabbing;
 }
 
+.dragging-card {
+  opacity: 0.75;
+  border-style: dashed;
+}
+
 .icon-btn {
   width: 34px;
   height: 34px;

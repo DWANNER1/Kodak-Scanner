@@ -30,6 +30,8 @@ namespace KodakScannerApp
     public class DeleteRequest
     {
         public string Path { get; set; }
+        public int? Index { get; set; }
+        public string Folder { get; set; }
     }
 
     public class RotateRequest

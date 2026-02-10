@@ -233,8 +233,13 @@ namespace KodakScannerApp
             }
         }
 
-        public ApiResult DeleteFile(string filePath)
+        public ApiResult DeleteFile(string filePath, int? index, string folder)
         {
+            if (!string.IsNullOrWhiteSpace(folder) && index.HasValue)
+            {
+                filePath = ResolvePathByIndex(folder, index.Value);
+            }
+
             if (string.IsNullOrWhiteSpace(filePath))
             {
                 return new ApiResult { Ok = false, Message = "Missing file path" };
@@ -287,6 +292,22 @@ namespace KodakScannerApp
                     return new ApiResult { Ok = false, Message = ex.Message };
                 }
             }
+        }
+
+        private string ResolvePathByIndex(string folder, int index)
+        {
+            if (index < 0) return null;
+            var list = new List<string>();
+            foreach (var f in _scannedFiles)
+            {
+                if (string.Equals(Path.GetDirectoryName(f), folder, StringComparison.OrdinalIgnoreCase))
+                {
+                    list.Add(f);
+                }
+            }
+            list.Sort(ComparePageNames);
+            if (index >= list.Count) return null;
+            return list[index];
         }
 
         public ApiResult RotateFile(string filePath, string direction)
