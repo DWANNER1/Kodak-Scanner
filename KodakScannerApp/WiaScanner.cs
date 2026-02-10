@@ -12,6 +12,7 @@ namespace KodakScannerApp
         private const int WIA_IPA_CURRENT_INTENT = 6146;
         private const int WIA_DPS_DOCUMENT_HANDLING_SELECT = 3088;
         private const int WIA_DPS_DOCUMENT_HANDLING_STATUS = 3087;
+        private const int WIA_IPS_DOCUMENT_HANDLING_SELECT = 3088;
 
         private const int WIA_DPS_DOCUMENT_HANDLING_FEEDER = 0x1;
         private const int WIA_DPS_DOCUMENT_HANDLING_DUPLEX = 0x4;
@@ -82,6 +83,23 @@ namespace KodakScannerApp
                             value |= WIA_DPS_DOCUMENT_HANDLING_DUPLEX;
                         }
                         handlingSelect.Value = value;
+                    }
+                    catch
+                    {
+                        // Some drivers reject this property; ignore and continue.
+                    }
+                }
+                var itemHandlingSelect = GetProperty(item.Properties, WIA_IPS_DOCUMENT_HANDLING_SELECT);
+                if (itemHandlingSelect != null)
+                {
+                    try
+                    {
+                        var value = WIA_DPS_DOCUMENT_HANDLING_FEEDER;
+                        if (settings.Duplex)
+                        {
+                            value |= WIA_DPS_DOCUMENT_HANDLING_DUPLEX;
+                        }
+                        itemHandlingSelect.Value = value;
                     }
                     catch
                     {

@@ -167,7 +167,9 @@
     if (!normalizedRoot.endsWith("/")) {
       normalizedRoot += "/";
     }
-    if (normalizedFile.indexOf(normalizedRoot) !== 0) return "";
+    var fileLower = normalizedFile.toLowerCase();
+    var rootLower = normalizedRoot.toLowerCase();
+    if (fileLower.indexOf(rootLower) !== 0) return "";
     var rel = normalizedFile.substring(normalizedRoot.length);
     return encodeURI(rel);
   }
