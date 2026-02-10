@@ -191,6 +191,15 @@ namespace KodakScannerApp
 
             try
             {
+                return common.ShowTransfer(item, WIA_FORMAT_BMP, true);
+            }
+            catch (Exception ex)
+            {
+                last = ex;
+            }
+
+            try
+            {
                 return item.Transfer(WIA_FORMAT_BMP);
             }
             catch (Exception ex)
@@ -201,6 +210,15 @@ namespace KodakScannerApp
             try
             {
                 return common.ShowTransfer(item, WIA_FORMAT_JPEG, false);
+            }
+            catch (Exception ex)
+            {
+                last = ex;
+            }
+
+            try
+            {
+                return common.ShowTransfer(item, WIA_FORMAT_JPEG, true);
             }
             catch (Exception ex)
             {
