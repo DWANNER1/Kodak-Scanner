@@ -61,12 +61,19 @@ namespace KodakScannerApp
             var handlingSelect = GetProperty(device.Properties, WIA_DPS_DOCUMENT_HANDLING_SELECT);
             if (handlingSelect != null)
             {
-                var value = WIA_DPS_DOCUMENT_HANDLING_FEEDER;
-                if (settings.Duplex)
+                try
                 {
-                    value |= WIA_DPS_DOCUMENT_HANDLING_DUPLEX;
+                    var value = WIA_DPS_DOCUMENT_HANDLING_FEEDER;
+                    if (settings.Duplex)
+                    {
+                        value |= WIA_DPS_DOCUMENT_HANDLING_DUPLEX;
+                    }
+                    handlingSelect.Value = value;
                 }
-                handlingSelect.Value = value;
+                catch
+                {
+                    // Some drivers reject this property; ignore and continue.
+                }
             }
 
             dynamic common = Activator.CreateInstance(Type.GetTypeFromProgID("WIA.CommonDialog"));
@@ -74,7 +81,15 @@ namespace KodakScannerApp
             var page = 0;
             while (true)
             {
-                dynamic image = common.ShowTransfer(item, "{B96B3CAB-0728-11D3-9D7B-0000F81EF32E}", false);
+                dynamic image;
+                try
+                {
+                    image = common.ShowTransfer(item, "{B96B3CAB-0728-11D3-9D7B-0000F81EF32E}", false);
+                }
+                catch
+                {
+                    image = common.ShowTransfer(item);
+                }
                 if (image == null)
                 {
                     break;
