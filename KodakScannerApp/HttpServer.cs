@@ -13,7 +13,7 @@ namespace KodakScannerApp
     {
         private readonly ScannerService _scannerService;
         private readonly string _wwwRoot;
-        private readonly HttpListener _listener;
+        private HttpListener _listener;
         private readonly JavaScriptSerializer _json;
         private CancellationTokenSource _cts;
 
@@ -23,16 +23,21 @@ namespace KodakScannerApp
         {
             _scannerService = scannerService;
             _wwwRoot = wwwRoot;
-            _listener = new HttpListener();
             _json = new JavaScriptSerializer();
         }
 
         public void Start()
         {
-            var port = FindAvailablePort(5005, 5015);
-            BaseUrl = "http://localhost:" + port + "/";
-            _listener.Prefixes.Add(BaseUrl);
-            _listener.Start();
+            var port = 5005;
+            if (!IsPortFree(port))
+            {
+                throw new InvalidOperationException("Port " + port + " is already in use.");
+            }
+            var started = TryStartListener("localhost", port) || TryStartListener("127.0.0.1", port);
+            if (!started)
+            {
+                throw new HttpListenerException(5, "Access denied while starting local HTTP listener.");
+            }
 
             _cts = new CancellationTokenSource();
             Task.Run(() => ListenLoop(_cts.Token));
@@ -46,12 +51,30 @@ namespace KodakScannerApp
                 {
                     _cts.Cancel();
                 }
-                if (_listener.IsListening)
+                if (_listener != null && _listener.IsListening)
                 {
                     _listener.Stop();
                 }
             }
             catch { }
+        }
+
+        private bool TryStartListener(string host, int port)
+        {
+            try
+            {
+                var listener = new HttpListener();
+                var baseUrl = "http://" + host + ":" + port + "/";
+                listener.Prefixes.Add(baseUrl);
+                listener.Start();
+                _listener = listener;
+                BaseUrl = baseUrl;
+                return true;
+            }
+            catch (HttpListenerException)
+            {
+                return false;
+            }
         }
 
         private void ListenLoop(CancellationToken token)
@@ -196,21 +219,19 @@ namespace KodakScannerApp
             return "application/octet-stream";
         }
 
-        private static int FindAvailablePort(int start, int end)
+        private static bool IsPortFree(int port)
         {
-            for (int port = start; port <= end; port++)
+            try
             {
-                try
-                {
-                    var test = new HttpListener();
-                    test.Prefixes.Add("http://localhost:" + port + "/");
-                    test.Start();
-                    test.Stop();
-                    return port;
-                }
-                catch { }
+                var test = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, port);
+                test.Start();
+                test.Stop();
+                return true;
             }
-            return start;
+            catch
+            {
+                return false;
+            }
         }
     }
 }
