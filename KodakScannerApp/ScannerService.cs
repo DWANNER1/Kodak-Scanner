@@ -20,6 +20,7 @@ namespace KodakScannerApp
         public ScannerService(string outputRoot)
         {
             _outputRoot = outputRoot;
+            Logger.Initialize(outputRoot);
             _scanner = new WiaScanner();
             _pages = new List<PageItem>();
             _status = new ScanStatus { State = "idle", Message = "Ready", PagesScanned = 0, Pages = new List<PageItem>() };
@@ -105,6 +106,7 @@ namespace KodakScannerApp
                             _status.State = "scanning";
                             _status.Message = "Scanning... (" + _pages.Count + ")";
                             _status.PagesScanned = _pages.Count;
+                            Logger.Log("page saved " + path);
                         }
                     });
 
@@ -247,13 +249,16 @@ namespace KodakScannerApp
 
             lock (_lock)
             {
+                Logger.Log("delete requested id=" + id);
                 var page = _pages.Find(p => string.Equals(p.Id, id, StringComparison.OrdinalIgnoreCase));
                 if (page == null)
                 {
+                    Logger.Log("delete not found id=" + id);
                     return new ApiResult { Ok = false, Message = "Page not found" };
                 }
 
                 var filePath = page.Path;
+                Logger.Log("delete path=" + filePath);
                 if (!IsUnderOutputRoot(filePath))
                 {
                     return new ApiResult { Ok = false, Message = "Invalid file path" };
@@ -291,10 +296,12 @@ namespace KodakScannerApp
                     _pages.AddRange(otherFolders);
                     _pages.AddRange(sameFolder);
                     _status.PagesScanned = _pages.Count;
+                    Logger.Log("delete done count=" + _pages.Count);
                     return new ApiResult { Ok = true, Message = "Deleted" };
                 }
                 catch (Exception ex)
                 {
+                    Logger.Log("delete error " + ex.Message);
                     return new ApiResult { Ok = false, Message = ex.Message };
                 }
             }
@@ -353,6 +360,7 @@ namespace KodakScannerApp
                 return new ApiResult { Ok = false, Message = "No pages to reorder" };
             }
 
+            Logger.Log("reorder requested ids=" + string.Join(",", orderedIds));
             var first = _pages.Find(p => string.Equals(p.Id, orderedIds[0], StringComparison.OrdinalIgnoreCase));
             if (first == null)
             {
@@ -394,10 +402,12 @@ namespace KodakScannerApp
                     _status.PagesScanned = _pages.Count;
                 }
 
+                Logger.Log("reorder done");
                 return new ApiResult { Ok = true, Message = "Reordered" };
             }
             catch (Exception ex)
             {
+                Logger.Log("reorder error " + ex.Message);
                 return new ApiResult { Ok = false, Message = ex.Message };
             }
         }
@@ -422,6 +432,8 @@ namespace KodakScannerApp
                 File.Move(tempMap[original], newPath);
                 orderedPages[i].Path = newPath;
             }
+
+            Logger.Log("renumbered folder=" + folder + " count=" + orderedPages.Count);
         }
 
         private static int ComparePageNames(string left, string right)

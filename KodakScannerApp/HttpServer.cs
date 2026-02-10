@@ -191,6 +191,7 @@ namespace KodakScannerApp
                 {
                     var body = ReadBody(context.Request);
                     var request = _json.Deserialize<DeleteRequest>(body);
+                    Logger.Log("api/delete " + (request?.Id ?? ""));
                     var result = _scannerService.DeleteFile(request?.Id);
                     WriteJson(context, result);
                     return;
@@ -209,8 +210,25 @@ namespace KodakScannerApp
                 {
                     var body = ReadBody(context.Request);
                     var request = _json.Deserialize<ReorderRequest>(body);
+                    Logger.Log("api/reorder " + (request?.Ids == null ? "" : string.Join(",", request.Ids)));
                     var result = _scannerService.ReorderFiles(request?.Ids);
                     WriteJson(context, result);
+                    return;
+                }
+
+                if (path.Equals("api/logs", StringComparison.OrdinalIgnoreCase))
+                {
+                    var logPath = Path.Combine(_scannerService.OutputRoot, "debug.log");
+                    if (File.Exists(logPath))
+                    {
+                        var lines = File.ReadAllLines(logPath);
+                        var start = Math.Max(0, lines.Length - 200);
+                        var slice = new string[lines.Length - start];
+                        Array.Copy(lines, start, slice, 0, slice.Length);
+                        WriteJson(context, new { Lines = slice });
+                        return;
+                    }
+                    WriteJson(context, new { Lines = new string[0] });
                     return;
                 }
 

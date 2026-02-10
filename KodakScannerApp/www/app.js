@@ -30,6 +30,8 @@
   var isDragging = false;
   var dragPath = "";
   var debugEl = document.getElementById("debugLog");
+  var serverLogEl = document.getElementById("serverLog");
+  var serverLogBtn = document.getElementById("refreshServerLog");
 
   function logEvent(label, data) {
     if (!debugEl) return;
@@ -43,6 +45,14 @@
       }
     }
     debugEl.textContent = line + "\n" + debugEl.textContent;
+  }
+
+  function refreshServerLog() {
+    if (!serverLogEl) return;
+    apiGet("/api/logs").then(function (res) {
+      if (!res || !res.Lines) return;
+      serverLogEl.textContent = res.Lines.join("\n");
+    });
   }
 
   function setActiveTab(tabName) {
@@ -484,4 +494,10 @@
   loadDevices();
   refreshStatus();
   setInterval(refreshStatus, 2000);
+  if (serverLogBtn) {
+    serverLogBtn.addEventListener("click", function () {
+      refreshServerLog();
+    });
+  }
+  refreshServerLog();
 })();
