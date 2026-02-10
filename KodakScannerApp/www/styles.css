@@ -309,46 +309,64 @@ button.ghost:hover {
   margin: 0;
   font-size: 12px;
   color: #374155;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
 }
 
 .file-list li {
   position: relative;
   display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 160px 10px 12px;
-  min-height: 72px;
-  border-bottom: 1px solid #eef1f6;
-  word-break: break-all;
-  overflow: hidden;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #e7ebf4;
+  border-radius: 14px;
+  background: #ffffff;
+  min-height: 260px;
 }
 
-.file-list li::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image: url("https://i.pcmag.com/imagery/reviews/00utxy9pw3jsebzmkxq5jxw-2-hero-image-gallery.fit_scale.size_1028x578.v1569475994.jpg");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  background-size: 150px auto;
-  opacity: 0.16;
-  pointer-events: none;
-}
-
-.file-list li span,
 .file-path {
   position: relative;
   z-index: 1;
+  font-size: 11px;
+  color: #4b566b;
 }
 
 .file-thumb {
-  width: 72px;
-  height: 52px;
-  border-radius: 10px;
-  object-fit: cover;
+  width: 100%;
+  max-height: 360px;
+  object-fit: contain;
+  border-radius: 12px;
   border: 1px solid #e2e6f0;
-  background: #f5f6fb;
-  flex: 0 0 auto;
+  background: #f6f8fd;
+}
+
+.file-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.file-actions button {
+  padding: 6px 10px;
+  font-size: 11px;
+  border-radius: 8px;
+}
+
+.file-actions button.danger {
+  background: #f3d6d6;
+  color: #7d2d2d;
+}
+
+.file-actions button.danger:hover {
+  background: #eec2c2;
+}
+
+@media (max-width: 980px) {
+  .file-list {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 900px) {

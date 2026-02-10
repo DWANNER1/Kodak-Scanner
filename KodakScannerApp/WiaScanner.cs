@@ -281,14 +281,29 @@ namespace KodakScannerApp
 
             for (var page = 1; page <= settings.MaxPages; page++)
             {
-                dynamic image = common.ShowAcquireImage(
-                    WIA_DEVICE_TYPE_SCANNER,
-                    intent,
-                    0,
-                    format,
-                    false,
-                    true,
-                    false);
+                dynamic image;
+                try
+                {
+                    image = common.ShowAcquireImage(
+                        WIA_DEVICE_TYPE_SCANNER,
+                        intent,
+                        0,
+                        format,
+                        false,
+                        false,
+                        false);
+                }
+                catch
+                {
+                    image = common.ShowAcquireImage(
+                        WIA_DEVICE_TYPE_SCANNER,
+                        intent,
+                        0,
+                        format,
+                        false,
+                        true,
+                        false);
+                }
 
                 if (image == null)
                 {

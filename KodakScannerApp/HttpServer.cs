@@ -187,6 +187,15 @@ namespace KodakScannerApp
                     return;
                 }
 
+                if (path.Equals("api/delete", StringComparison.OrdinalIgnoreCase) && context.Request.HttpMethod == "POST")
+                {
+                    var body = ReadBody(context.Request);
+                    var request = _json.Deserialize<DeleteRequest>(body);
+                    var result = _scannerService.DeleteFile(request?.Path);
+                    WriteJson(context, result);
+                    return;
+                }
+
                 context.Response.StatusCode = 404;
                 context.Response.Close();
             }

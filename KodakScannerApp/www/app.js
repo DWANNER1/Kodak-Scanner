@@ -99,13 +99,58 @@
           text.className = "file-path";
           text.textContent = f;
 
+          var actions = document.createElement("div");
+          actions.className = "file-actions";
+
+          var zoomIn = document.createElement("button");
+          zoomIn.type = "button";
+          zoomIn.textContent = "Zoom In";
+
+          var zoomOut = document.createElement("button");
+          zoomOut.type = "button";
+          zoomOut.textContent = "Zoom Out";
+
+          var del = document.createElement("button");
+          del.type = "button";
+          del.textContent = "Delete";
+          del.className = "danger";
+
           var rel = toRelativeScanPath(f, lastOutputRoot);
           if (rel) {
             img.src = "/scans/" + rel;
           }
 
+          img.dataset.scale = "1";
+          img.style.transformOrigin = "center center";
+          img.style.transition = "transform 0.15s ease";
+          zoomIn.addEventListener("click", function () {
+            var next = Math.min(2.5, parseFloat(img.dataset.scale || "1") + 0.25);
+            img.dataset.scale = next.toString();
+            img.style.transform = "scale(" + next + ")";
+          });
+          zoomOut.addEventListener("click", function () {
+            var next = Math.max(0.5, parseFloat(img.dataset.scale || "1") - 0.25);
+            img.dataset.scale = next.toString();
+            img.style.transform = "scale(" + next + ")";
+          });
+          del.addEventListener("click", function () {
+            if (!confirm("Delete this scan?")) return;
+            apiPost("/api/delete", { Path: f }).then(function (res) {
+              if (!res.Ok) {
+                alert(res.Message || "Delete failed");
+                return;
+              }
+              refreshStatus();
+            });
+          });
+
+          actions.appendChild(zoomOut);
+          actions.appendChild(zoomIn);
+          actions.appendChild(del);
+
           li.appendChild(img);
           li.appendChild(text);
+          li.appendChild(actions);
           filesEl.appendChild(li);
         });
       }

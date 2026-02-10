@@ -174,5 +174,33 @@ namespace KodakScannerApp
                 _status.PagesScanned = 0;
             }
         }
+
+        public ApiResult DeleteFile(string filePath)
+        {
+            if (string.IsNullOrWhiteSpace(filePath))
+            {
+                return new ApiResult { Ok = false, Message = "Missing file path" };
+            }
+
+            lock (_lock)
+            {
+                if (!File.Exists(filePath))
+                {
+                    return new ApiResult { Ok = false, Message = "File not found" };
+                }
+
+                try
+                {
+                    File.Delete(filePath);
+                    _scannedFiles.RemoveAll(f => string.Equals(f, filePath, StringComparison.OrdinalIgnoreCase));
+                    _status.PagesScanned = _scannedFiles.Count;
+                    return new ApiResult { Ok = true, Message = "Deleted" };
+                }
+                catch (Exception ex)
+                {
+                    return new ApiResult { Ok = false, Message = ex.Message };
+                }
+            }
+        }
     }
 }

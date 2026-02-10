@@ -25,6 +25,11 @@ namespace KodakScannerApp
         public string BaseName { get; set; }
     }
 
+    public class DeleteRequest
+    {
+        public string Path { get; set; }
+    }
+
     public class ApiResult
     {
         public bool Ok { get; set; }
