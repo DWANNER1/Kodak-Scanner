@@ -52,6 +52,10 @@ namespace KodakScannerApp
             }
 
             dynamic device = deviceInfo.Connect();
+            if (device.Items == null || device.Items.Count == 0)
+            {
+                throw new InvalidOperationException("Scanner has no items available.");
+            }
             dynamic item = device.Items[1];
 
             SetProperty(item.Properties, WIA_IPA_HORIZONTAL_RESOLUTION, settings.Dpi);
@@ -81,15 +85,16 @@ namespace KodakScannerApp
             var page = 0;
             while (true)
             {
-                dynamic image;
-                try
+                if (!IsFeederReady(device))
                 {
-                    image = common.ShowTransfer(item, "{B96B3CAB-0728-11D3-9D7B-0000F81EF32E}", false);
+                    if (page == 0)
+                    {
+                        throw new InvalidOperationException("Feeder is empty or not ready.");
+                    }
+                    break;
                 }
-                catch
-                {
-                    image = common.ShowTransfer(item);
-                }
+
+                dynamic image = TransferWithFallback(common, item);
                 if (image == null)
                 {
                     break;
@@ -158,6 +163,32 @@ namespace KodakScannerApp
             catch
             {
                 return false;
+            }
+        }
+
+        private static dynamic TransferWithFallback(dynamic common, dynamic item)
+        {
+            try
+            {
+                return common.ShowTransfer(item, "{B96B3CAB-0728-11D3-9D7B-0000F81EF32E}", false);
+            }
+            catch
+            {
+                try
+                {
+                    return item.Transfer("{B96B3CAB-0728-11D3-9D7B-0000F81EF32E}");
+                }
+                catch
+                {
+                    try
+                    {
+                        return common.ShowTransfer(item);
+                    }
+                    catch
+                    {
+                        return item.Transfer();
+                    }
+                }
             }
         }
     }
