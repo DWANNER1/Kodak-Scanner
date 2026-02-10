@@ -59,6 +59,14 @@ namespace KodakScannerApp
             if (settings.Dpi <= 0) settings.Dpi = 300;
             if (string.IsNullOrWhiteSpace(settings.ColorMode)) settings.ColorMode = "color";
             if (settings.MaxPages <= 0) settings.MaxPages = 100;
+            if (string.IsNullOrWhiteSpace(settings.DeviceId))
+            {
+                var devices = ListDevices();
+                if (devices.Count > 0)
+                {
+                    settings.DeviceId = devices[0].Id;
+                }
+            }
 
             lock (_lock)
             {
