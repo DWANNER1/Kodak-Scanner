@@ -254,9 +254,31 @@ namespace KodakScannerApp
                 try
                 {
                     File.Delete(filePath);
-                    _scannedFiles.RemoveAll(f => string.Equals(f, filePath, StringComparison.OrdinalIgnoreCase));
+                    var folder = Path.GetDirectoryName(filePath) ?? "";
+                    var sameFolder = new List<string>();
+                    var otherFolders = new List<string>();
+                    foreach (var f in _scannedFiles)
+                    {
+                        if (string.Equals(f, filePath, StringComparison.OrdinalIgnoreCase))
+                        {
+                            continue;
+                        }
+                        if (string.Equals(Path.GetDirectoryName(f), folder, StringComparison.OrdinalIgnoreCase))
+                        {
+                            sameFolder.Add(f);
+                        }
+                        else
+                        {
+                            otherFolders.Add(f);
+                        }
+                    }
+
+                    var updated = RenumberFilesInFolder(folder, sameFolder);
+                    _scannedFiles.Clear();
+                    _scannedFiles.AddRange(otherFolders);
+                    _scannedFiles.AddRange(updated);
                     _status.PagesScanned = _scannedFiles.Count;
-                    return new ApiResult { Ok = true, Message = "Deleted" };
+                    return new ApiResult { Ok = true, Message = "Deleted", Files = new List<string>(_scannedFiles) };
                 }
                 catch (Exception ex)
                 {
@@ -333,26 +355,7 @@ namespace KodakScannerApp
 
             try
             {
-                var tempMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                for (int i = 0; i < orderedFiles.Count; i++)
-                {
-                    var file = orderedFiles[i];
-                    var ext = Path.GetExtension(file);
-                    var temp = Path.Combine(folder, Guid.NewGuid().ToString("N") + ext);
-                    File.Move(file, temp);
-                    tempMap[file] = temp;
-                }
-
-                var newList = new List<string>();
-                for (int i = 0; i < orderedFiles.Count; i++)
-                {
-                    var original = orderedFiles[i];
-                    var ext = Path.GetExtension(original);
-                    var newPath = Path.Combine(folder, "page_" + (i + 1).ToString("000") + ext);
-                    File.Move(tempMap[original], newPath);
-                    newList.Add(newPath);
-                }
-
+                var newList = RenumberFilesInFolder(folder, orderedFiles);
                 lock (_lock)
                 {
                     _scannedFiles.Clear();
@@ -366,6 +369,31 @@ namespace KodakScannerApp
             {
                 return new ApiResult { Ok = false, Message = ex.Message };
             }
+        }
+
+        private static List<string> RenumberFilesInFolder(string folder, List<string> orderedFiles)
+        {
+            var tempMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < orderedFiles.Count; i++)
+            {
+                var file = orderedFiles[i];
+                var ext = Path.GetExtension(file);
+                var temp = Path.Combine(folder, Guid.NewGuid().ToString("N") + ext);
+                File.Move(file, temp);
+                tempMap[file] = temp;
+            }
+
+            var newList = new List<string>();
+            for (int i = 0; i < orderedFiles.Count; i++)
+            {
+                var original = orderedFiles[i];
+                var ext = Path.GetExtension(original);
+                var newPath = Path.Combine(folder, "page_" + (i + 1).ToString("000") + ext);
+                File.Move(tempMap[original], newPath);
+                newList.Add(newPath);
+            }
+
+            return newList;
         }
 
         private bool IsUnderOutputRoot(string filePath)

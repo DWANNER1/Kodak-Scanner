@@ -95,9 +95,6 @@
       setStatus(state, message, tone);
       if (status.Files) {
         var nextKey = status.Files.join("|");
-        if (nextKey === lastFilesKey) {
-          return;
-        }
         lastFilesKey = nextKey;
         filesEl.innerHTML = "";
         var previousCount = parseInt(filesEl.dataset.count || "0", 10);
@@ -309,6 +306,7 @@
 
   function enableReorder() {
     var dragPath = "";
+
     filesEl.addEventListener("dragstart", function (e) {
       var target = e.target;
       if (!target || !target.classList.contains("page-ball")) return;
@@ -323,38 +321,50 @@
       if (target && target.classList.contains("page-ball")) {
         target.classList.remove("dragging");
       }
+      dragPath = "";
     });
 
     filesEl.addEventListener("dragover", function (e) {
       if (!dragPath) return;
+      var ball = e.target.closest(".page-ball");
+      if (!ball) return;
       e.preventDefault();
       e.dataTransfer.dropEffect = "move";
-      var li = e.target.closest("li");
-      if (!li || !li.dataset.path) return;
-      var dragging = filesEl.querySelector("li[data-path=\"" + dragPath + "\"]");
-      if (!dragging || dragging === li) return;
-      var rect = li.getBoundingClientRect();
-      var after = (e.clientY - rect.top) > rect.height / 2;
-      if (after) {
-        li.after(dragging);
-      } else {
-        li.before(dragging);
-      }
     });
 
     filesEl.addEventListener("drop", function (e) {
       if (!dragPath) return;
+      var ball = e.target.closest(".page-ball");
+      if (!ball) return;
       e.preventDefault();
-      dragPath = "";
+
+      var targetPath = ball.dataset.path || "";
+      if (!targetPath || targetPath === dragPath) {
+        dragPath = "";
+        return;
+      }
+
+      var dragging = filesEl.querySelector("li[data-path=\"" + dragPath + "\"]");
+      var target = filesEl.querySelector("li[data-path=\"" + targetPath + "\"]");
+      if (!dragging || !target) {
+        dragPath = "";
+        return;
+      }
+
+      target.before(dragging);
+
       var ordered = Array.prototype.map.call(filesEl.querySelectorAll("li[data-path]"), function (li) {
         return li.dataset.path;
       });
+
       apiPost("/api/reorder", { Files: ordered }).then(function (res) {
         if (!res.Ok) {
           alert(res.Message || "Reorder failed");
         }
         refreshStatus();
       });
+
+      dragPath = "";
     });
   }
 
