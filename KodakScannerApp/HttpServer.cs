@@ -205,6 +205,15 @@ namespace KodakScannerApp
                     return;
                 }
 
+                if (path.Equals("api/reorder", StringComparison.OrdinalIgnoreCase) && context.Request.HttpMethod == "POST")
+                {
+                    var body = ReadBody(context.Request);
+                    var request = _json.Deserialize<ReorderRequest>(body);
+                    var result = _scannerService.ReorderFiles(request?.Files);
+                    WriteJson(context, result);
+                    return;
+                }
+
                 if (path.Equals("api/pickpdf", StringComparison.OrdinalIgnoreCase))
                 {
                     var picked = FilePicker.PickPdf();

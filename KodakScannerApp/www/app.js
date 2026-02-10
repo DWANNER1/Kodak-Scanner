@@ -100,7 +100,9 @@
         }
         lastFilesKey = nextKey;
         filesEl.innerHTML = "";
-        status.Files.forEach(function (f) {
+        var previousCount = parseInt(filesEl.dataset.count || "0", 10);
+        filesEl.dataset.count = status.Files.length.toString();
+        status.Files.forEach(function (f, index) {
           var li = document.createElement("li");
           var img = document.createElement("img");
           img.className = "file-thumb";
@@ -108,6 +110,12 @@
 
           var actions = document.createElement("div");
           actions.className = "file-actions";
+
+          var ball = document.createElement("div");
+          ball.className = "page-ball";
+          ball.textContent = (index + 1).toString();
+          ball.setAttribute("draggable", "true");
+          ball.dataset.path = f;
 
           var zoomOut = buildIconButton("Zoom out", "zoom_out");
           var zoomIn = buildIconButton("Zoom in", "zoom_in");
@@ -130,17 +138,22 @@
           var scale = zoomState[f] || 1;
           img.dataset.scale = scale.toString();
           img.style.transform = "scale(" + scale + ")";
+          if (scale > 1) {
+            wrap.classList.add("zoomed");
+          }
           zoomIn.addEventListener("click", function () {
             var next = Math.min(3, parseFloat(img.dataset.scale || "1") + 0.25);
             img.dataset.scale = next.toString();
             img.style.transform = "scale(" + next + ")";
             zoomState[f] = next;
+            wrap.classList.toggle("zoomed", next > 1);
           });
           zoomOut.addEventListener("click", function () {
             var next = Math.max(0.5, parseFloat(img.dataset.scale || "1") - 0.25);
             img.dataset.scale = next.toString();
             img.style.transform = "scale(" + next + ")";
             zoomState[f] = next;
+            wrap.classList.toggle("zoomed", next > 1);
           });
           rotateLeft.addEventListener("click", function () {
             rotateFile(f, "left", img);
@@ -162,6 +175,7 @@
             });
           });
 
+          actions.appendChild(ball);
           actions.appendChild(zoomOut);
           actions.appendChild(zoomIn);
           actions.appendChild(rotateLeft);
@@ -183,10 +197,16 @@
             scrollState[f] = { left: wrap.scrollLeft, top: wrap.scrollTop };
           });
 
+          li.dataset.path = f;
           li.appendChild(wrap);
           li.appendChild(actions);
           filesEl.appendChild(li);
         });
+        if (status.Files.length > previousCount) {
+          setTimeout(function () {
+            window.scrollTo(0, document.body.scrollHeight);
+          }, 0);
+        }
       }
     });
   }
@@ -287,6 +307,57 @@
     });
   }
 
+  function enableReorder() {
+    var dragPath = "";
+    filesEl.addEventListener("dragstart", function (e) {
+      var target = e.target;
+      if (!target || !target.classList.contains("page-ball")) return;
+      dragPath = target.dataset.path || "";
+      target.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", dragPath);
+    });
+
+    filesEl.addEventListener("dragend", function (e) {
+      var target = e.target;
+      if (target && target.classList.contains("page-ball")) {
+        target.classList.remove("dragging");
+      }
+    });
+
+    filesEl.addEventListener("dragover", function (e) {
+      if (!dragPath) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      var li = e.target.closest("li");
+      if (!li || !li.dataset.path) return;
+      var dragging = filesEl.querySelector("li[data-path=\"" + dragPath + "\"]");
+      if (!dragging || dragging === li) return;
+      var rect = li.getBoundingClientRect();
+      var after = (e.clientY - rect.top) > rect.height / 2;
+      if (after) {
+        li.after(dragging);
+      } else {
+        li.before(dragging);
+      }
+    });
+
+    filesEl.addEventListener("drop", function (e) {
+      if (!dragPath) return;
+      e.preventDefault();
+      dragPath = "";
+      var ordered = Array.prototype.map.call(filesEl.querySelectorAll("li[data-path]"), function (li) {
+        return li.dataset.path;
+      });
+      apiPost("/api/reorder", { Files: ordered }).then(function (res) {
+        if (!res.Ok) {
+          alert(res.Message || "Reorder failed");
+        }
+        refreshStatus();
+      });
+    });
+  }
+
   document.getElementById("scanBtn").addEventListener("click", function (event) {
     event.preventDefault();
     event.stopPropagation();
@@ -366,6 +437,7 @@
     });
   });
 
+  enableReorder();
   loadDevices();
   refreshStatus();
   setInterval(refreshStatus, 2000);

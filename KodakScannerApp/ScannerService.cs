@@ -311,6 +311,63 @@ namespace KodakScannerApp
             }
         }
 
+        public ApiResult ReorderFiles(List<string> orderedFiles)
+        {
+            if (orderedFiles == null || orderedFiles.Count == 0)
+            {
+                return new ApiResult { Ok = false, Message = "No files to reorder" };
+            }
+
+            var folder = Path.GetDirectoryName(orderedFiles[0]) ?? "";
+            foreach (var file in orderedFiles)
+            {
+                if (!IsUnderOutputRoot(file) || !File.Exists(file))
+                {
+                    return new ApiResult { Ok = false, Message = "Invalid file path" };
+                }
+                if (!string.Equals(Path.GetDirectoryName(file), folder, StringComparison.OrdinalIgnoreCase))
+                {
+                    return new ApiResult { Ok = false, Message = "Files must be in the same folder" };
+                }
+            }
+
+            try
+            {
+                var tempMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                for (int i = 0; i < orderedFiles.Count; i++)
+                {
+                    var file = orderedFiles[i];
+                    var ext = Path.GetExtension(file);
+                    var temp = Path.Combine(folder, Guid.NewGuid().ToString("N") + ext);
+                    File.Move(file, temp);
+                    tempMap[file] = temp;
+                }
+
+                var newList = new List<string>();
+                for (int i = 0; i < orderedFiles.Count; i++)
+                {
+                    var original = orderedFiles[i];
+                    var ext = Path.GetExtension(original);
+                    var newPath = Path.Combine(folder, "page_" + (i + 1).ToString("000") + ext);
+                    File.Move(tempMap[original], newPath);
+                    newList.Add(newPath);
+                }
+
+                lock (_lock)
+                {
+                    _scannedFiles.Clear();
+                    _scannedFiles.AddRange(newList);
+                    _status.PagesScanned = _scannedFiles.Count;
+                }
+
+                return new ApiResult { Ok = true, Message = "Reordered", Files = newList };
+            }
+            catch (Exception ex)
+            {
+                return new ApiResult { Ok = false, Message = ex.Message };
+            }
+        }
+
         private bool IsUnderOutputRoot(string filePath)
         {
             try

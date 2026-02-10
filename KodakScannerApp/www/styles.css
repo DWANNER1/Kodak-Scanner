@@ -329,10 +329,14 @@ button.ghost:hover {
 .file-thumb-wrap {
   width: 100%;
   max-height: 540px;
-  overflow: auto;
+  overflow: hidden;
   border-radius: 12px;
   border: 1px solid #e2e6f0;
   background: #f6f8fd;
+}
+
+.file-thumb-wrap.zoomed {
+  overflow: auto;
 }
 
 .file-thumb {
@@ -348,6 +352,28 @@ button.ghost:hover {
   gap: 8px;
   order: -1;
   justify-content: flex-end;
+  align-items: center;
+}
+
+.page-ball {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #0b0b0c;
+  color: #fff;
+  font-weight: 600;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: auto;
+  cursor: grab;
+  user-select: none;
+}
+
+.page-ball.dragging {
+  opacity: 0.6;
+  cursor: grabbing;
 }
 
 .icon-btn {

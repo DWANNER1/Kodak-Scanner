@@ -38,6 +38,11 @@ namespace KodakScannerApp
         public string Direction { get; set; }
     }
 
+    public class ReorderRequest
+    {
+        public List<string> Files { get; set; }
+    }
+
     public class ApiResult
     {
         public bool Ok { get; set; }
