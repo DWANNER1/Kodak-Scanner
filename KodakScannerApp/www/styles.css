@@ -326,13 +326,21 @@ button.ghost:hover {
   min-height: 260px;
 }
 
+.file-thumb-wrap {
+  width: 100%;
+  max-height: 520px;
+  overflow: auto;
+  border-radius: 12px;
+  border: 1px solid #e2e6f0;
+  background: #f6f8fd;
+}
+
 .file-thumb {
   width: 100%;
   max-height: 520px;
   object-fit: contain;
-  border-radius: 12px;
-  border: 1px solid #e2e6f0;
-  background: #f6f8fd;
+  display: block;
+  transform-origin: center center;
 }
 
 .file-actions {

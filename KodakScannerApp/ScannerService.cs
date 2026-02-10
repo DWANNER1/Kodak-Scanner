@@ -13,6 +13,7 @@ namespace KodakScannerApp
         private readonly List<string> _scannedFiles;
         private ScanStatus _status;
         private bool _scanInProgress;
+        private string _lastJobDir;
 
         public string OutputRoot => _outputRoot;
 
@@ -39,7 +40,8 @@ namespace KodakScannerApp
                     Message = _status.Message,
                     PagesScanned = _status.PagesScanned,
                     Files = new List<string>(_scannedFiles),
-                    OutputRoot = _outputRoot
+                    OutputRoot = _outputRoot,
+                    CurrentJobDir = _lastJobDir
                 };
             }
         }
@@ -87,6 +89,7 @@ namespace KodakScannerApp
                 try
                 {
                     var jobDir = Path.Combine(_outputRoot, DateTime.Now.ToString("yyyyMMdd_HHmmss"));
+                    _lastJobDir = jobDir;
                     Directory.CreateDirectory(jobDir);
 
                     _scanner.ScanToFiles(settings, jobDir, path =>
@@ -138,7 +141,7 @@ namespace KodakScannerApp
             }
 
             var format = (request.Format ?? "pdf").ToLowerInvariant();
-            var outputDir = string.IsNullOrWhiteSpace(request.OutputPath) ? _outputRoot : request.OutputPath;
+            var outputDir = string.IsNullOrWhiteSpace(request.OutputPath) ? (_lastJobDir ?? _outputRoot) : request.OutputPath;
             var baseName = string.IsNullOrWhiteSpace(request.BaseName) ? "scan" : request.BaseName;
 
             Directory.CreateDirectory(outputDir);

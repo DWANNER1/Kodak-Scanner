@@ -22,6 +22,8 @@
   var tabSections = document.querySelectorAll(".tab-section");
   var lastDevices = [];
   var lastOutputRoot = "";
+  var lastJobDir = "";
+  var zoomState = {};
 
   function setActiveTab(tabName) {
     navItems.forEach(function (item) {
@@ -74,6 +76,7 @@
       var message = status.Message || "";
       var tone = "available";
       lastOutputRoot = status.OutputRoot || "";
+      lastJobDir = status.CurrentJobDir || "";
 
       if (!lastDevices || lastDevices.length === 0) {
         setStatus("Offline", "No scanner detected", "offline");
@@ -114,15 +117,21 @@
           img.dataset.scale = "1";
           img.style.transformOrigin = "center center";
           img.style.transition = "transform 0.15s ease";
+
+          var scale = zoomState[f] || 1;
+          img.dataset.scale = scale.toString();
+          img.style.transform = "scale(" + scale + ")";
           zoomIn.addEventListener("click", function () {
-            var next = Math.min(2.5, parseFloat(img.dataset.scale || "1") + 0.25);
+            var next = Math.min(3, parseFloat(img.dataset.scale || "1") + 0.25);
             img.dataset.scale = next.toString();
             img.style.transform = "scale(" + next + ")";
+            zoomState[f] = next;
           });
           zoomOut.addEventListener("click", function () {
             var next = Math.max(0.5, parseFloat(img.dataset.scale || "1") - 0.25);
             img.dataset.scale = next.toString();
             img.style.transform = "scale(" + next + ")";
+            zoomState[f] = next;
           });
           rotateLeft.addEventListener("click", function () {
             rotateFile(f, "left", img);
@@ -137,6 +146,7 @@
                 alert(res.Message || "Delete failed");
                 return;
               }
+              delete zoomState[f];
               refreshStatus();
             });
           });
@@ -147,7 +157,11 @@
           actions.appendChild(rotateRight);
           actions.appendChild(del);
 
-          li.appendChild(img);
+          var wrap = document.createElement("div");
+          wrap.className = "file-thumb-wrap";
+          wrap.appendChild(img);
+
+          li.appendChild(wrap);
           li.appendChild(actions);
           filesEl.appendChild(li);
         });
@@ -233,6 +247,9 @@
   document.getElementById("exportBtn").addEventListener("click", function (event) {
     event.preventDefault();
     event.stopPropagation();
+    if (!document.getElementById("outputPath").value && lastJobDir) {
+      document.getElementById("outputPath").value = lastJobDir;
+    }
     var payload = {
       Format: document.getElementById("format").value,
       OutputPath: document.getElementById("outputPath").value,
