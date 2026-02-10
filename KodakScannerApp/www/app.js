@@ -21,6 +21,7 @@
   var navItems = document.querySelectorAll(".nav-item");
   var tabSections = document.querySelectorAll(".tab-section");
   var lastDevices = [];
+  var lastOutputRoot = "";
 
   function setActiveTab(tabName) {
     navItems.forEach(function (item) {
@@ -72,6 +73,7 @@
       var state = status.State || "Idle";
       var message = status.Message || "";
       var tone = "available";
+      lastOutputRoot = status.OutputRoot || "";
 
       if (!lastDevices || lastDevices.length === 0) {
         setStatus("Offline", "No scanner detected", "offline");
@@ -89,13 +91,37 @@
         filesEl.innerHTML = "";
         status.Files.forEach(function (f) {
           var li = document.createElement("li");
-          var span = document.createElement("span");
-          span.textContent = f;
-          li.appendChild(span);
+          var img = document.createElement("img");
+          img.className = "file-thumb";
+          img.alt = "Scanned page preview";
+
+          var text = document.createElement("div");
+          text.className = "file-path";
+          text.textContent = f;
+
+          var rel = toRelativeScanPath(f, lastOutputRoot);
+          if (rel) {
+            img.src = "/scans/" + rel;
+          }
+
+          li.appendChild(img);
+          li.appendChild(text);
           filesEl.appendChild(li);
         });
       }
     });
+  }
+
+  function toRelativeScanPath(filePath, rootPath) {
+    if (!filePath || !rootPath) return "";
+    var normalizedFile = filePath.replace(/\\\\/g, "/");
+    var normalizedRoot = rootPath.replace(/\\\\/g, "/");
+    if (!normalizedRoot.endsWith("/")) {
+      normalizedRoot += "/";
+    }
+    if (normalizedFile.indexOf(normalizedRoot) !== 0) return "";
+    var rel = normalizedFile.substring(normalizedRoot.length);
+    return encodeURI(rel);
   }
 
   document.getElementById("scanBtn").addEventListener("click", function (event) {

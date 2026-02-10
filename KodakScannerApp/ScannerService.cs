@@ -14,6 +14,8 @@ namespace KodakScannerApp
         private ScanStatus _status;
         private bool _scanInProgress;
 
+        public string OutputRoot => _outputRoot;
+
         public ScannerService(string outputRoot)
         {
             _outputRoot = outputRoot;
@@ -36,7 +38,8 @@ namespace KodakScannerApp
                     State = _status.State,
                     Message = _status.Message,
                     PagesScanned = _status.PagesScanned,
-                    Files = new List<string>(_scannedFiles)
+                    Files = new List<string>(_scannedFiles),
+                    OutputRoot = _outputRoot
                 };
             }
         }

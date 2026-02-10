@@ -107,6 +107,22 @@ namespace KodakScannerApp
                 return;
             }
 
+            if (path.StartsWith("scans/", StringComparison.OrdinalIgnoreCase))
+            {
+                var relative = path.Substring("scans/".Length);
+                var fullPath = Path.GetFullPath(Path.Combine(_scannerService.OutputRoot, relative.Replace('/', Path.DirectorySeparatorChar)));
+                var rootPath = Path.GetFullPath(_scannerService.OutputRoot + Path.DirectorySeparatorChar);
+                if (!fullPath.StartsWith(rootPath, StringComparison.OrdinalIgnoreCase) || !File.Exists(fullPath))
+                {
+                    context.Response.StatusCode = 404;
+                    context.Response.Close();
+                    return;
+                }
+
+                WriteFile(context, fullPath);
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(path))
             {
                 path = "index.html";

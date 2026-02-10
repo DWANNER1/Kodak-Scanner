@@ -149,6 +149,21 @@ body {
   color: #cfe0ff;
 }
 
+.status-pill.available {
+  background: rgba(62, 181, 106, 0.22);
+  color: #c9f3d7;
+}
+
+.status-pill.offline {
+  background: rgba(224, 76, 62, 0.22);
+  color: #ffd6d1;
+}
+
+.status-pill.busy {
+  background: rgba(255, 166, 62, 0.22);
+  color: #ffe2b8;
+}
+
 .content {
   padding: 32px 40px;
 }
@@ -298,10 +313,14 @@ button.ghost:hover {
 
 .file-list li {
   position: relative;
-  padding: 8px 0;
-  min-height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 160px 10px 12px;
+  min-height: 72px;
   border-bottom: 1px solid #eef1f6;
   word-break: break-all;
+  overflow: hidden;
 }
 
 .file-list li::before {
@@ -310,15 +329,26 @@ button.ghost:hover {
   inset: 0;
   background-image: url("https://i.pcmag.com/imagery/reviews/00utxy9pw3jsebzmkxq5jxw-2-hero-image-gallery.fit_scale.size_1028x578.v1569475994.jpg");
   background-repeat: no-repeat;
-  background-position: left center;
-  background-size: 140px auto;
-  opacity: 0.08;
+  background-position: right 12px center;
+  background-size: 150px auto;
+  opacity: 0.16;
   pointer-events: none;
 }
 
-.file-list li span {
+.file-list li span,
+.file-path {
   position: relative;
   z-index: 1;
+}
+
+.file-thumb {
+  width: 72px;
+  height: 52px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 1px solid #e2e6f0;
+  background: #f5f6fb;
+  flex: 0 0 auto;
 }
 
 @media (max-width: 900px) {

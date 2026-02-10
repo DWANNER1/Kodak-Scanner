@@ -38,5 +38,6 @@ namespace KodakScannerApp
         public string Message { get; set; }
         public int PagesScanned { get; set; }
         public List<string> Files { get; set; }
+        public string OutputRoot { get; set; }
     }
 }
