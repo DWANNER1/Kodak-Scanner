@@ -14,6 +14,23 @@
   var deviceSelect = document.getElementById("deviceSelect");
   var statusEl = document.getElementById("status");
   var filesEl = document.getElementById("files");
+  var navItems = document.querySelectorAll(".nav-item");
+  var tabSections = document.querySelectorAll(".tab-section");
+
+  function setActiveTab(tabName) {
+    navItems.forEach(function (item) {
+      item.classList.toggle("active", item.dataset.tab === tabName);
+    });
+    tabSections.forEach(function (section) {
+      section.classList.toggle("active", section.dataset.section === tabName);
+    });
+  }
+
+  navItems.forEach(function (item) {
+    item.addEventListener("click", function () {
+      setActiveTab(item.dataset.tab);
+    });
+  });
 
   function loadDevices() {
     apiGet("/api/devices").then(function (devices) {
@@ -42,7 +59,9 @@
         filesEl.innerHTML = "";
         status.Files.forEach(function (f) {
           var li = document.createElement("li");
-          li.textContent = f;
+          var span = document.createElement("span");
+          span.textContent = f;
+          li.appendChild(span);
           filesEl.appendChild(li);
         });
       }

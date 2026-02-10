@@ -23,11 +23,11 @@
       </div>
 
       <nav class="nav">
-        <button class="nav-item active" type="button">Scanner</button>
-        <button class="nav-item" type="button">Output</button>
-        <button class="nav-item" type="button">Automation</button>
-        <button class="nav-item" type="button">Maintenance</button>
-        <button class="nav-item" type="button">About</button>
+        <button class="nav-item active" type="button" data-tab="scanner">Scanner</button>
+        <button class="nav-item" type="button" data-tab="output">Output</button>
+        <button class="nav-item" type="button" data-tab="automation">Automation</button>
+        <button class="nav-item" type="button" data-tab="maintenance">Maintenance</button>
+        <button class="nav-item" type="button" data-tab="about">About</button>
       </nav>
 
       <div class="sidebar-foot">
@@ -49,77 +49,102 @@
         </div>
       </header>
 
-      <section class="card">
-        <div class="card-head">
-          <h2>Scanner Settings</h2>
-          <span class="chip">Device</span>
-        </div>
-        <div class="form-grid">
-          <label>
-            Device
-            <select id="deviceSelect"></select>
-          </label>
-          <label>
-            DPI
-            <input id="dpi" type="number" value="300" min="75" max="1200" />
-          </label>
-          <label>
-            Color Mode
-            <select id="colorMode">
-              <option value="color">Color</option>
-              <option value="gray">Grayscale</option>
-              <option value="bw">Black &amp; White</option>
-            </select>
-          </label>
-          <label>
-            Duplex
-            <select id="duplex">
-              <option value="false">Off</option>
-              <option value="true">On</option>
-            </select>
-          </label>
-          <label>
-            Max Pages
-            <input id="maxPages" type="number" value="100" min="1" max="500" />
-          </label>
-        </div>
+      <section class="tab-section active" data-section="scanner">
+        <section class="card">
+          <div class="card-head">
+            <h2>Scanner Settings</h2>
+            <span class="chip">Device</span>
+          </div>
+          <div class="form-grid">
+            <label>
+              Device
+              <select id="deviceSelect"></select>
+            </label>
+            <label>
+              DPI
+              <input id="dpi" type="number" value="300" min="75" max="1200" />
+            </label>
+            <label>
+              Color Mode
+              <select id="colorMode">
+                <option value="color">Color</option>
+                <option value="gray">Grayscale</option>
+                <option value="bw">Black &amp; White</option>
+              </select>
+            </label>
+            <label>
+              Duplex
+              <select id="duplex">
+                <option value="false">Off</option>
+                <option value="true">On</option>
+              </select>
+            </label>
+            <label>
+              Max Pages
+              <input id="maxPages" type="number" value="100" min="1" max="500" />
+            </label>
+          </div>
+        </section>
       </section>
 
-      <section class="card">
-        <div class="card-head">
-          <h2>Export</h2>
-          <span class="chip">Output</span>
-        </div>
-        <div class="form-grid">
-          <label>
-            Output Format
-            <select id="format">
-              <option value="pdf">PDF (multi-page)</option>
-              <option value="tiff">TIFF (multi-page)</option>
-              <option value="jpg">JPG (separate files)</option>
-              <option value="png">PNG (separate files)</option>
-            </select>
-          </label>
-          <label>
-            Output Folder
-            <input id="outputPath" type="text" placeholder="C:\\Users\\...\\Documents\\Scans" />
-          </label>
-          <label>
-            Base Name
-            <input id="baseName" type="text" value="scan" />
-          </label>
-        </div>
-        <div class="actions">
-          <button id="exportBtn" class="primary" type="button">Export</button>
-        </div>
+      <section class="tab-section" data-section="output">
+        <section class="card">
+          <div class="card-head">
+            <h2>Export</h2>
+            <span class="chip">Output</span>
+          </div>
+          <div class="form-grid">
+            <label>
+              Output Format
+              <select id="format">
+                <option value="pdf">PDF (multi-page)</option>
+                <option value="tiff">TIFF (multi-page)</option>
+                <option value="jpg">JPG (separate files)</option>
+                <option value="png">PNG (separate files)</option>
+              </select>
+            </label>
+            <label>
+              Output Folder
+              <input id="outputPath" type="text" placeholder="C:\\Users\\...\\Documents\\Scans" />
+            </label>
+            <label>
+              Base Name
+              <input id="baseName" type="text" value="scan" />
+            </label>
+          </div>
+          <div class="actions">
+            <button id="exportBtn" class="primary" type="button">Export</button>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <h2>Scanned Pages</h2>
+            <span class="chip">Queue</span>
+          </div>
+          <ul id="files" class="file-list"></ul>
+        </section>
       </section>
 
-      <section class="card">
-        <div class="card-head">
-          <h2>Scanned Pages</h2>
-          <span class="chip">Queue</span>
-        </div>
-        <ul id="files" class="file-list"></ul>
+      <section class="tab-section" data-section="automation">
+        <section class="card placeholder">
+          <h2>Automation</h2>
+          <p>Create scan presets and auto-export rules for frequent jobs.</p>
+        </section>
+      </section>
+
+      <section class="tab-section" data-section="maintenance">
+        <section class="card placeholder">
+          <h2>Maintenance</h2>
+          <p>Track consumables, cleanings, and calibration reminders.</p>
+        </section>
+      </section>
+
+      <section class="tab-section" data-section="about">
+        <section class="card placeholder">
+          <h2>About</h2>
+          <p>Device details, firmware version, and support resources.</p>
+        </section>
       </section>
     </main>
   </div>
