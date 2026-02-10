@@ -4,6 +4,7 @@
   "private": true,
   "main": "electron/main.js",
   "description": "Electron shell for Kodak Scanner UI",
+  "author": "Deepak Wanner",
   "scripts": {
     "dev": "concurrently -k \"npm:dev:renderer\" \"npm:dev:electron\"",
     "dev:renderer": "vite",
@@ -19,9 +20,9 @@
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.0",
     "concurrently": "^8.2.2",
-    "electron": "^30.0.9",
-    "electron-builder": "^24.13.3",
-    "vite": "^5.4.8",
+    "electron": "^40.2.1",
+    "electron-builder": "^26.7.0",
+    "vite": "^7.3.1",
     "wait-on": "^7.2.0"
   },
   "build": {
@@ -35,9 +36,13 @@
       "electron/**/*"
     ],
     "win": {
-      "target": "nsis",
-      "arch": [
-        "x64"
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
       ]
     }
   }
