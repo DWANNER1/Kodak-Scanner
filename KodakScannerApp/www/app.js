@@ -28,7 +28,6 @@
   var imageVersion = {};
   var lastFilesKey = "";
   var isDragging = false;
-  var dragHandleActive = false;
   var dragPath = "";
 
   function setActiveTab(tabName) {
@@ -173,7 +172,10 @@
           });
           del.addEventListener("click", function () {
             if (!confirm("Delete this scan?")) return;
-            apiPost("/api/delete", { Path: filePath, Index: index, Folder: lastJobDir || "" }).then(function (res) {
+            var folder = filePath.replace(/\\[^\\]+$/, "");
+            var nodes = Array.prototype.slice.call(filesEl.querySelectorAll("li[data-path]"));
+            var domIndex = nodes.indexOf(li);
+            apiPost("/api/delete", { Path: filePath, Index: domIndex, Folder: folder }).then(function (res) {
               if (!res.Ok) {
                 alert(res.Message || "Delete failed");
                 return;
@@ -204,30 +206,21 @@
           });
 
           li.dataset.path = filePath;
-          li.draggable = true;
-          li.addEventListener("dragstart", function (e) {
-            if (!dragHandleActive) {
-              e.preventDefault();
-              return;
-            }
+          li.draggable = false;
+          ball.addEventListener("dragstart", function (e) {
             isDragging = true;
-            e.dataTransfer.effectAllowed = "move";
             dragPath = filePath;
-            e.dataTransfer.setData("text/plain", filePath);
             li.classList.add("dragging-card");
+            e.dataTransfer.effectAllowed = "move";
+            e.dataTransfer.setData("text/plain", filePath);
+            if (e.dataTransfer.setDragImage) {
+              e.dataTransfer.setDragImage(li, li.offsetWidth / 2, 20);
+            }
           });
-          li.addEventListener("dragend", function () {
+          ball.addEventListener("dragend", function () {
             isDragging = false;
-            dragHandleActive = false;
             dragPath = "";
             li.classList.remove("dragging-card");
-          });
-
-          ball.addEventListener("mousedown", function () {
-            dragHandleActive = true;
-          });
-          ball.addEventListener("mouseup", function () {
-            dragHandleActive = false;
           });
           li.appendChild(wrap);
           li.appendChild(actions);
@@ -339,10 +332,6 @@
   }
 
   function enableReorder() {
-
-    filesEl.addEventListener("dragstart", function () {});
-
-    filesEl.addEventListener("dragend", function () {});
 
     filesEl.addEventListener("dragover", function (e) {
       if (!dragPath) return;
