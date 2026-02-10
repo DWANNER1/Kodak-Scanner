@@ -226,6 +226,33 @@ h1 {
   margin-bottom: 0;
 }
 
+.debug-panel {
+  background: #111318;
+  color: #e6e9f2;
+}
+
+.debug-panel .card-head h2 {
+  color: #e6e9f2;
+}
+
+.debug-panel .chip {
+  background: rgba(255, 255, 255, 0.1);
+  color: #d0d5e6;
+}
+
+.debug-log {
+  max-height: 260px;
+  overflow: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  background: #0c0f14;
+  border-radius: 10px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
 .card-head {
   display: flex;
   align-items: center;

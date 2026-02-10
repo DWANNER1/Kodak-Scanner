@@ -29,6 +29,21 @@
   var lastFilesKey = "";
   var isDragging = false;
   var dragPath = "";
+  var debugEl = document.getElementById("debugLog");
+
+  function logEvent(label, data) {
+    if (!debugEl) return;
+    var time = new Date().toLocaleTimeString();
+    var line = "[" + time + "] " + label;
+    if (data !== undefined) {
+      try {
+        line += " " + JSON.stringify(data);
+      } catch {
+        line += " " + String(data);
+      }
+    }
+    debugEl.textContent = line + "\n" + debugEl.textContent;
+  }
 
   function setActiveTab(tabName) {
     navItems.forEach(function (item) {
@@ -97,8 +112,10 @@
       setStatus(state, message, tone);
       if (status.Pages) {
         if (isDragging) {
+          logEvent("skip refresh (dragging)");
           return;
         }
+        logEvent("status.pages", { count: status.Pages.length });
         var nextKey = status.Pages.map(function (p) { return p.Id + ":" + p.Path; }).join("|");
         lastFilesKey = nextKey;
         filesEl.innerHTML = "";
@@ -171,7 +188,9 @@
           });
           del.addEventListener("click", function () {
             if (!confirm("Delete this scan?")) return;
+            logEvent("delete click", { id: page.Id, path: filePath });
             apiPost("/api/delete", { Id: page.Id }).then(function (res) {
+              logEvent("delete result", res);
               if (!res.Ok) {
                 alert(res.Message || "Delete failed");
                 return;
@@ -212,11 +231,13 @@
             if (e.dataTransfer.setDragImage) {
               e.dataTransfer.setDragImage(li, li.offsetWidth / 2, 20);
             }
+            logEvent("dragstart", { id: page.Id });
           });
           ball.addEventListener("dragend", function () {
             isDragging = false;
             dragPath = "";
             li.classList.remove("dragging-card");
+            logEvent("dragend");
           });
           li.appendChild(wrap);
           li.appendChild(actions);
@@ -358,12 +379,15 @@
         dragPath = "";
         return;
       }
+      var fromId = dragPath;
       ordered.splice(fromIndex, 1);
       ordered.splice(toIndex, 0, dragPath);
 
       dragPath = "";
 
+      logEvent("drop reorder", { from: fromId, to: targetId, ordered: ordered });
       apiPost("/api/reorder", { Ids: ordered }).then(function (res) {
+        logEvent("reorder result", res);
         if (!res.Ok) {
           alert(res.Message || "Reorder failed");
         }
