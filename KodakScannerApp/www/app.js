@@ -130,7 +130,7 @@
           var rel = toRelativeScanPath(filePath, lastOutputRoot);
           if (rel) {
             img.dataset.baseSrc = "/scans/" + rel;
-            var v = imageVersion[f] || "";
+            var v = imageVersion[filePath] || "";
             img.src = img.dataset.baseSrc + (v ? "?v=" + v : "");
           }
 
