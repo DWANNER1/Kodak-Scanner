@@ -1,6 +1,8 @@
 (function () {
   function apiGet(path) {
-    return fetch(path, { cache: "no-store" }).then(r => r.json());
+    return fetch(path, { cache: "no-store" }).then(function (r) {
+      return r.json();
+    });
   }
 
   function apiPost(path, body) {
@@ -8,7 +10,9 @@
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body || {})
-    }).then(r => r.json());
+    }).then(function (r) {
+      return r.json();
+    });
   }
 
   var deviceSelect = document.getElementById("deviceSelect");
@@ -16,6 +20,7 @@
   var filesEl = document.getElementById("files");
   var navItems = document.querySelectorAll(".nav-item");
   var tabSections = document.querySelectorAll(".tab-section");
+  var lastDevices = [];
 
   function setActiveTab(tabName) {
     navItems.forEach(function (item) {
@@ -34,15 +39,17 @@
 
   function loadDevices() {
     apiGet("/api/devices").then(function (devices) {
+      lastDevices = devices || [];
       deviceSelect.innerHTML = "";
-      if (!devices || devices.length === 0) {
+      if (!lastDevices || lastDevices.length === 0) {
         var opt = document.createElement("option");
         opt.value = "";
         opt.textContent = "No devices found";
         deviceSelect.appendChild(opt);
+        setStatus("Offline", "No scanner detected", "offline");
         return;
       }
-      devices.forEach(function (d) {
+      lastDevices.forEach(function (d) {
         var opt = document.createElement("option");
         opt.value = d.Id;
         opt.textContent = d.Name;
@@ -51,10 +58,33 @@
     });
   }
 
+  function setStatus(state, message, tone) {
+    statusEl.textContent = state + (message ? ": " + message : "");
+    statusEl.classList.remove("available", "offline", "busy");
+    if (tone) {
+      statusEl.classList.add(tone);
+    }
+  }
+
   function refreshStatus() {
     apiGet("/api/status").then(function (status) {
       if (!status) return;
-      statusEl.textContent = status.State + ": " + status.Message;
+      var state = status.State || "Idle";
+      var message = status.Message || "";
+      var tone = "available";
+
+      if (!lastDevices || lastDevices.length === 0) {
+        setStatus("Offline", "No scanner detected", "offline");
+        return;
+      }
+
+      if (state.toLowerCase().indexOf("scan") !== -1) {
+        tone = "busy";
+      } else if (state.toLowerCase().indexOf("error") !== -1) {
+        tone = "offline";
+      }
+
+      setStatus(state, message, tone);
       if (status.Files) {
         filesEl.innerHTML = "";
         status.Files.forEach(function (f) {
@@ -68,7 +98,9 @@
     });
   }
 
-  document.getElementById("scanBtn").addEventListener("click", function () {
+  document.getElementById("scanBtn").addEventListener("click", function (event) {
+    event.preventDefault();
+    event.stopPropagation();
     var payload = {
       DeviceId: deviceSelect.value,
       Dpi: parseInt(document.getElementById("dpi").value || "300", 10),
@@ -82,10 +114,14 @@
         alert(res.Message || "Scan failed");
       }
       refreshStatus();
+    }).catch(function (err) {
+      alert("Scan failed: " + err);
     });
   });
 
-  document.getElementById("exportBtn").addEventListener("click", function () {
+  document.getElementById("exportBtn").addEventListener("click", function (event) {
+    event.preventDefault();
+    event.stopPropagation();
     var payload = {
       Format: document.getElementById("format").value,
       OutputPath: document.getElementById("outputPath").value,
@@ -99,12 +135,18 @@
         alert(res.Message + "\n" + (res.Files || []).join("\n"));
       }
       refreshStatus();
+    }).catch(function (err) {
+      alert("Export failed: " + err);
     });
   });
 
-  document.getElementById("clearBtn").addEventListener("click", function () {
+  document.getElementById("clearBtn").addEventListener("click", function (event) {
+    event.preventDefault();
+    event.stopPropagation();
     apiPost("/api/clear", {}).then(function () {
       refreshStatus();
+    }).catch(function (err) {
+      alert("Clear failed: " + err);
     });
   });
 
