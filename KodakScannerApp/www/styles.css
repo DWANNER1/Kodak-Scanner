@@ -310,7 +310,7 @@ button.ghost:hover {
   font-size: 12px;
   color: #374155;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
 }
 
@@ -328,7 +328,7 @@ button.ghost:hover {
 
 .file-thumb-wrap {
   width: 100%;
-  max-height: 520px;
+  max-height: 540px;
   overflow: auto;
   border-radius: 12px;
   border: 1px solid #e2e6f0;
@@ -337,7 +337,7 @@ button.ghost:hover {
 
 .file-thumb {
   width: 100%;
-  max-height: 520px;
+  max-height: 540px;
   object-fit: contain;
   display: block;
   transform-origin: center center;
@@ -380,7 +380,13 @@ button.ghost:hover {
   background: #eec2c2;
 }
 
-@media (max-width: 980px) {
+@media (max-width: 1200px) {
+  .file-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 840px) {
   .file-list {
     grid-template-columns: 1fr;
   }

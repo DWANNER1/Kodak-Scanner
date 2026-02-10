@@ -155,7 +155,23 @@ namespace KodakScannerApp
             if (format == "pdf")
             {
                 var outputFile = Path.Combine(outputDir, baseName + ".pdf");
-                PdfWriter.WritePdfFromImages(files, outputFile);
+                if (request.Append && File.Exists(outputFile))
+                {
+                    var merged = new List<string>();
+                    merged.AddRange(GetImagesInFolder(outputDir));
+                    foreach (var f in files)
+                    {
+                        if (!merged.Exists(x => string.Equals(x, f, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            merged.Add(f);
+                        }
+                    }
+                    PdfWriter.WritePdfFromImages(merged, outputFile);
+                }
+                else
+                {
+                    PdfWriter.WritePdfFromImages(files, outputFile);
+                }
                 return new ApiResult { Ok = true, Message = "Saved PDF", Files = new List<string> { outputFile } };
             }
 
@@ -173,6 +189,31 @@ namespace KodakScannerApp
             }
 
             return new ApiResult { Ok = false, Message = "Unsupported format" };
+        }
+
+        private static List<string> GetImagesInFolder(string folder)
+        {
+            var list = new List<string>();
+            if (string.IsNullOrWhiteSpace(folder) || !Directory.Exists(folder))
+            {
+                return list;
+            }
+
+            var exts = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff"
+            };
+
+            foreach (var file in Directory.GetFiles(folder))
+            {
+                if (exts.Contains(Path.GetExtension(file)))
+                {
+                    list.Add(file);
+                }
+            }
+
+            list.Sort(StringComparer.OrdinalIgnoreCase);
+            return list;
         }
 
         public void Clear()

@@ -160,6 +160,7 @@
           var wrap = document.createElement("div");
           wrap.className = "file-thumb-wrap";
           wrap.appendChild(img);
+          enableDragScroll(wrap);
 
           li.appendChild(wrap);
           li.appendChild(actions);
@@ -223,6 +224,47 @@
     return "M6 7h12l-1 14H7L6 7zm3-3h6l1 2H8l1-2z";
   }
 
+  function enableDragScroll(container) {
+    var isDown = false;
+    var startX = 0;
+    var startY = 0;
+    var scrollLeft = 0;
+    var scrollTop = 0;
+
+    container.style.cursor = "grab";
+
+    container.addEventListener("mousedown", function (e) {
+      if (e.button !== 0) return;
+      isDown = true;
+      container.style.cursor = "grabbing";
+      startX = e.pageX - container.offsetLeft;
+      startY = e.pageY - container.offsetTop;
+      scrollLeft = container.scrollLeft;
+      scrollTop = container.scrollTop;
+    });
+
+    container.addEventListener("mouseleave", function () {
+      isDown = false;
+      container.style.cursor = "grab";
+    });
+
+    container.addEventListener("mouseup", function () {
+      isDown = false;
+      container.style.cursor = "grab";
+    });
+
+    container.addEventListener("mousemove", function (e) {
+      if (!isDown) return;
+      e.preventDefault();
+      var x = e.pageX - container.offsetLeft;
+      var y = e.pageY - container.offsetTop;
+      var walkX = x - startX;
+      var walkY = y - startY;
+      container.scrollLeft = scrollLeft - walkX;
+      container.scrollTop = scrollTop - walkY;
+    });
+  }
+
   document.getElementById("scanBtn").addEventListener("click", function (event) {
     event.preventDefault();
     event.stopPropagation();
@@ -244,16 +286,19 @@
     });
   });
 
-  document.getElementById("exportBtn").addEventListener("click", function (event) {
-    event.preventDefault();
-    event.stopPropagation();
+  function handleExport(append, event) {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
     if (!document.getElementById("outputPath").value && lastJobDir) {
       document.getElementById("outputPath").value = lastJobDir;
     }
     var payload = {
       Format: document.getElementById("format").value,
       OutputPath: document.getElementById("outputPath").value,
-      BaseName: document.getElementById("baseName").value
+      BaseName: document.getElementById("baseName").value,
+      Append: !!append
     };
 
     apiPost("/api/export", payload).then(function (res) {
@@ -266,6 +311,14 @@
     }).catch(function (err) {
       alert("Export failed: " + err);
     });
+  }
+
+  document.getElementById("exportBtn").addEventListener("click", function (event) {
+    handleExport(false, event);
+  });
+
+  document.getElementById("appendBtn").addEventListener("click", function (event) {
+    handleExport(true, event);
   });
 
   document.getElementById("clearBtn").addEventListener("click", function (event) {
