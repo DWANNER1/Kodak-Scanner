@@ -15,9 +15,28 @@ This is a Windows desktop app that hosts a local web UI for controlling a Kodak 
 
 ## Project Layout
 - `KodakScannerApp` - WinForms app + local HTTP server + web UI
+- `desktop-app` - Electron + React shell that loads the local web UI
 
 ## Build and Run
 Open `KodakScannerApp\KodakScannerApp.csproj` in Visual Studio and run.
+
+## Electron Shell (Windows x64)
+The Electron app embeds the existing local web UI at `http://localhost:5005/`.
+
+### Dev
+From `desktop-app`:
+```powershell
+npm install
+npm run dev
+```
+Start the C# service separately (Visual Studio or `run.bat`).
+
+### Build Installer (x64)
+From `desktop-app`:
+```powershell
+npm run dist
+```
+The installer will be under `desktop-app\release`.
 
 ## Notes
 - If the device only exposes TWAIN and not WIA, WIA-based scanning will not find the scanner. In that case, a TWAIN-based module is required.

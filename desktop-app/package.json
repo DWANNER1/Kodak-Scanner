@@ -1,0 +1,44 @@
+{
+  "name": "kodak-scanner-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "main": "electron/main.js",
+  "description": "Electron shell for Kodak Scanner UI",
+  "scripts": {
+    "dev": "concurrently -k \"npm:dev:renderer\" \"npm:dev:electron\"",
+    "dev:renderer": "vite",
+    "dev:electron": "wait-on http://localhost:5173 && electron .",
+    "build": "vite build",
+    "dist": "npm run build && electron-builder",
+    "lint": "echo 'no lint configured'"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.0",
+    "concurrently": "^8.2.2",
+    "electron": "^30.0.9",
+    "electron-builder": "^24.13.3",
+    "vite": "^5.4.8",
+    "wait-on": "^7.2.0"
+  },
+  "build": {
+    "appId": "com.deepak.kodakscanner",
+    "productName": "Kodak Scanner",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "arch": [
+        "x64"
+      ]
+    }
+  }
+}
