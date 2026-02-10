@@ -32,6 +32,7 @@
   var debugEl = document.getElementById("debugLog");
   var serverLogEl = document.getElementById("serverLog");
   var serverLogBtn = document.getElementById("refreshServerLog");
+  var lastLogSignature = "";
 
   function logEvent(label, data) {
     if (!debugEl) return;
@@ -44,6 +45,11 @@
         line += " " + String(data);
       }
     }
+    var signature = label + "|" + (data !== undefined ? JSON.stringify(data) : "");
+    if (signature === lastLogSignature) {
+      return;
+    }
+    lastLogSignature = signature;
     debugEl.textContent = line + "\n" + debugEl.textContent;
   }
 
