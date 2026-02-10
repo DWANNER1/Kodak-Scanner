@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace KodakScannerApp
 {
@@ -15,6 +16,7 @@ namespace KodakScannerApp
         private const int WIA_DPS_DOCUMENT_HANDLING_FEEDER = 0x1;
         private const int WIA_DPS_DOCUMENT_HANDLING_DUPLEX = 0x4;
         private const int WIA_DPS_DOCUMENT_HANDLING_STATUS_FEED_READY = 0x1;
+        private const string WIA_FORMAT_JPEG = "{B96B3CAE-0728-11D3-9D7B-0000F81EF32E}";
 
         public List<DeviceInfoDto> ListDevices()
         {
@@ -34,89 +36,96 @@ namespace KodakScannerApp
         public List<string> ScanToFiles(ScanSettings settings, string outputDir)
         {
             var files = new List<string>();
-            dynamic manager = Activator.CreateInstance(Type.GetTypeFromProgID("WIA.DeviceManager"));
-            dynamic deviceInfo = null;
-
-            foreach (var info in manager.DeviceInfos)
+            try
             {
-                if (string.Equals((string)info.DeviceID, settings.DeviceId, StringComparison.OrdinalIgnoreCase))
+                dynamic manager = Activator.CreateInstance(Type.GetTypeFromProgID("WIA.DeviceManager"));
+                dynamic deviceInfo = null;
+
+                foreach (var info in manager.DeviceInfos)
                 {
-                    deviceInfo = info;
-                    break;
-                }
-            }
-
-            if (deviceInfo == null)
-            {
-                throw new InvalidOperationException("Scanner not found. Ensure WIA driver is installed.");
-            }
-
-            dynamic device = deviceInfo.Connect();
-            if (device.Items == null || device.Items.Count == 0)
-            {
-                throw new InvalidOperationException("Scanner has no items available.");
-            }
-            dynamic item = device.Items[1];
-
-            SetProperty(item.Properties, WIA_IPA_HORIZONTAL_RESOLUTION, settings.Dpi);
-            SetProperty(item.Properties, WIA_IPA_VERTICAL_RESOLUTION, settings.Dpi);
-            SetProperty(item.Properties, WIA_IPA_CURRENT_INTENT, MapColorMode(settings.ColorMode));
-
-            var handlingSelect = GetProperty(device.Properties, WIA_DPS_DOCUMENT_HANDLING_SELECT);
-            if (handlingSelect != null)
-            {
-                try
-                {
-                    var value = WIA_DPS_DOCUMENT_HANDLING_FEEDER;
-                    if (settings.Duplex)
+                    if (string.Equals((string)info.DeviceID, settings.DeviceId, StringComparison.OrdinalIgnoreCase))
                     {
-                        value |= WIA_DPS_DOCUMENT_HANDLING_DUPLEX;
+                        deviceInfo = info;
+                        break;
                     }
-                    handlingSelect.Value = value;
                 }
-                catch
+
+                if (deviceInfo == null)
                 {
-                    // Some drivers reject this property; ignore and continue.
+                    throw new InvalidOperationException("Scanner not found. Ensure WIA driver is installed.");
                 }
-            }
 
-            dynamic common = Activator.CreateInstance(Type.GetTypeFromProgID("WIA.CommonDialog"));
-
-            var page = 0;
-            while (true)
-            {
-                if (!IsFeederReady(device))
+                dynamic device = deviceInfo.Connect();
+                if (device.Items == null || device.Items.Count == 0)
                 {
-                    if (page == 0)
+                    throw new InvalidOperationException("Scanner has no items available.");
+                }
+                dynamic item = device.Items[1];
+
+                SetProperty(item.Properties, WIA_IPA_HORIZONTAL_RESOLUTION, settings.Dpi);
+                SetProperty(item.Properties, WIA_IPA_VERTICAL_RESOLUTION, settings.Dpi);
+                SetProperty(item.Properties, WIA_IPA_CURRENT_INTENT, MapColorMode(settings.ColorMode));
+
+                var handlingSelect = GetProperty(device.Properties, WIA_DPS_DOCUMENT_HANDLING_SELECT);
+                if (handlingSelect != null)
+                {
+                    try
                     {
-                        throw new InvalidOperationException("Feeder is empty or not ready.");
+                        var value = WIA_DPS_DOCUMENT_HANDLING_FEEDER;
+                        if (settings.Duplex)
+                        {
+                            value |= WIA_DPS_DOCUMENT_HANDLING_DUPLEX;
+                        }
+                        handlingSelect.Value = value;
                     }
-                    break;
+                    catch
+                    {
+                        // Some drivers reject this property; ignore and continue.
+                    }
                 }
 
-                dynamic image = TransferWithFallback(common, item);
-                if (image == null)
+                dynamic common = Activator.CreateInstance(Type.GetTypeFromProgID("WIA.CommonDialog"));
+
+                var page = 0;
+                while (true)
                 {
-                    break;
+                    if (!IsFeederReady(device))
+                    {
+                        if (page == 0)
+                        {
+                            throw new InvalidOperationException("Feeder is empty or not ready.");
+                        }
+                        break;
+                    }
+
+                    dynamic image = TransferWithFallback(common, item);
+                    if (image == null)
+                    {
+                        break;
+                    }
+
+                    page++;
+                    var basePath = Path.Combine(outputDir, "page_" + page.ToString("000"));
+                    var path = SaveImageWithFallback(image, basePath);
+                    files.Add(path);
+
+                    if (page >= settings.MaxPages)
+                    {
+                        break;
+                    }
+
+                    if (!IsFeederReady(device))
+                    {
+                        break;
+                    }
                 }
 
-                page++;
-                var path = Path.Combine(outputDir, "page_" + page.ToString("000") + ".jpg");
-                image.SaveFile(path);
-                files.Add(path);
-
-                if (page >= settings.MaxPages)
-                {
-                    break;
-                }
-
-                if (!IsFeederReady(device))
-                {
-                    break;
-                }
+                return files;
             }
-
-            return files;
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("WIA error: " + ex.Message + " (0x" + ex.HResult.ToString("X") + ")", ex);
+            }
         }
 
         private static int MapColorMode(string mode)
@@ -170,13 +179,13 @@ namespace KodakScannerApp
         {
             try
             {
-                return common.ShowTransfer(item, "{B96B3CAB-0728-11D3-9D7B-0000F81EF32E}", false);
+                return common.ShowTransfer(item, WIA_FORMAT_JPEG, false);
             }
             catch
             {
                 try
                 {
-                    return item.Transfer("{B96B3CAB-0728-11D3-9D7B-0000F81EF32E}");
+                    return item.Transfer(WIA_FORMAT_JPEG);
                 }
                 catch
                 {
@@ -189,6 +198,22 @@ namespace KodakScannerApp
                         return item.Transfer();
                     }
                 }
+            }
+        }
+
+        private static string SaveImageWithFallback(dynamic image, string basePath)
+        {
+            var jpgPath = basePath + ".jpg";
+            try
+            {
+                image.SaveFile(jpgPath);
+                return jpgPath;
+            }
+            catch
+            {
+                var bmpPath = basePath + ".bmp";
+                image.SaveFile(bmpPath);
+                return bmpPath;
             }
         }
     }
