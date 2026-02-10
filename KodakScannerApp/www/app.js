@@ -116,6 +116,10 @@
           return;
         }
         logEvent("status.pages", { count: status.Pages.length });
+        logEvent("page.order", status.Pages.map(function (p, i) {
+          var name = p.Path ? p.Path.replace(/^.*[\\\/]/, "") : "";
+          return (i + 1) + ":" + p.Id + ":" + name;
+        }));
         var nextKey = status.Pages.map(function (p) { return p.Id + ":" + p.Path; }).join("|");
         lastFilesKey = nextKey;
         filesEl.innerHTML = "";
