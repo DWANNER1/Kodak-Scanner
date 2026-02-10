@@ -16,6 +16,7 @@ namespace KodakScannerApp
         private const int WIA_DPS_DOCUMENT_HANDLING_FEEDER = 0x1;
         private const int WIA_DPS_DOCUMENT_HANDLING_DUPLEX = 0x4;
         private const int WIA_DPS_DOCUMENT_HANDLING_STATUS_FEED_READY = 0x1;
+        private const string WIA_FORMAT_BMP = "{B96B3CAB-0728-11D3-9D7B-0000F81EF32E}";
         private const string WIA_FORMAT_JPEG = "{B96B3CAE-0728-11D3-9D7B-0000F81EF32E}";
 
         public List<DeviceInfoDto> ListDevices()
@@ -177,28 +178,68 @@ namespace KodakScannerApp
 
         private static dynamic TransferWithFallback(dynamic common, dynamic item)
         {
+            Exception last = null;
+
+            try
+            {
+                return common.ShowTransfer(item, WIA_FORMAT_BMP, false);
+            }
+            catch (Exception ex)
+            {
+                last = ex;
+            }
+
+            try
+            {
+                return item.Transfer(WIA_FORMAT_BMP);
+            }
+            catch (Exception ex)
+            {
+                last = ex;
+            }
+
             try
             {
                 return common.ShowTransfer(item, WIA_FORMAT_JPEG, false);
             }
-            catch
+            catch (Exception ex)
             {
-                try
-                {
-                    return item.Transfer(WIA_FORMAT_JPEG);
-                }
-                catch
-                {
-                    try
-                    {
-                        return common.ShowTransfer(item);
-                    }
-                    catch
-                    {
-                        return item.Transfer();
-                    }
-                }
+                last = ex;
             }
+
+            try
+            {
+                return item.Transfer(WIA_FORMAT_JPEG);
+            }
+            catch (Exception ex)
+            {
+                last = ex;
+            }
+
+            try
+            {
+                return common.ShowTransfer(item);
+            }
+            catch (Exception ex)
+            {
+                last = ex;
+            }
+
+            try
+            {
+                return item.Transfer();
+            }
+            catch (Exception ex)
+            {
+                last = ex;
+            }
+
+            if (last != null)
+            {
+                throw new InvalidOperationException("WIA transfer failed: " + last.Message + " (0x" + last.HResult.ToString("X") + ")");
+            }
+
+            return null;
         }
 
         private static string SaveImageWithFallback(dynamic image, string basePath)
