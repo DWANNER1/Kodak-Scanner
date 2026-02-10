@@ -95,10 +95,6 @@
           img.className = "file-thumb";
           img.alt = "Scanned page preview";
 
-          var text = document.createElement("div");
-          text.className = "file-path";
-          text.textContent = f;
-
           var actions = document.createElement("div");
           actions.className = "file-actions";
 
@@ -152,7 +148,6 @@
           actions.appendChild(del);
 
           li.appendChild(img);
-          li.appendChild(text);
           li.appendChild(actions);
           filesEl.appendChild(li);
         });
@@ -162,8 +157,8 @@
 
   function toRelativeScanPath(filePath, rootPath) {
     if (!filePath || !rootPath) return "";
-    var normalizedFile = filePath.replace(/\\\\/g, "/");
-    var normalizedRoot = rootPath.replace(/\\\\/g, "/");
+    var normalizedFile = filePath.replace(/\\/g, "/");
+    var normalizedRoot = rootPath.replace(/\\/g, "/");
     if (!normalizedRoot.endsWith("/")) {
       normalizedRoot += "/";
     }
