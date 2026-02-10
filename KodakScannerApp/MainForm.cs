@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Windows.Forms;
@@ -52,7 +53,23 @@ namespace KodakScannerApp
                 return;
             }
 
-            webBrowser1.Navigate(_server.BaseUrl);
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = _server.BaseUrl,
+                    UseShellExecute = true
+                });
+            }
+            catch
+            {
+                // If the default browser can't be launched, fall back to the embedded view.
+                webBrowser1.Navigate(_server.BaseUrl);
+            }
+
+            ShowInTaskbar = false;
+            WindowState = FormWindowState.Minimized;
+            Hide();
         }
 
         protected override void OnFormClosing(FormClosingEventArgs e)
