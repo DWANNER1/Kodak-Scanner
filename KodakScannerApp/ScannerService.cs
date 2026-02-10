@@ -273,6 +273,7 @@ namespace KodakScannerApp
                         }
                     }
 
+                    sameFolder.Sort(ComparePageNames);
                     var updated = RenumberFilesInFolder(folder, sameFolder);
                     _scannedFiles.Clear();
                     _scannedFiles.AddRange(otherFolders);
@@ -394,6 +395,28 @@ namespace KodakScannerApp
             }
 
             return newList;
+        }
+
+        private static int ComparePageNames(string left, string right)
+        {
+            var leftNum = ExtractPageNumber(left);
+            var rightNum = ExtractPageNumber(right);
+            if (leftNum != rightNum)
+            {
+                return leftNum.CompareTo(rightNum);
+            }
+            return string.Compare(left, right, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static int ExtractPageNumber(string path)
+        {
+            var name = Path.GetFileNameWithoutExtension(path) ?? "";
+            var index = name.LastIndexOf("_", StringComparison.OrdinalIgnoreCase);
+            if (index >= 0 && int.TryParse(name.Substring(index + 1), out var num))
+            {
+                return num;
+            }
+            return int.MaxValue;
         }
 
         private bool IsUnderOutputRoot(string filePath)

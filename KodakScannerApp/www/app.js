@@ -344,18 +344,17 @@
         return;
       }
 
-      var dragging = filesEl.querySelector("li[data-path=\"" + dragPath + "\"]");
-      var target = filesEl.querySelector("li[data-path=\"" + targetPath + "\"]");
-      if (!dragging || !target) {
-        dragPath = "";
-        return;
-      }
-
-      target.before(dragging);
-
       var ordered = Array.prototype.map.call(filesEl.querySelectorAll("li[data-path]"), function (li) {
         return li.dataset.path;
       });
+      var fromIndex = ordered.indexOf(dragPath);
+      var toIndex = ordered.indexOf(targetPath);
+      if (fromIndex === -1 || toIndex === -1) {
+        dragPath = "";
+        return;
+      }
+      ordered.splice(fromIndex, 1);
+      ordered.splice(toIndex, 0, dragPath);
 
       apiPost("/api/reorder", { Files: ordered }).then(function (res) {
         if (!res.Ok) {
