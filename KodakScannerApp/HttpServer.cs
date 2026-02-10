@@ -205,6 +205,13 @@ namespace KodakScannerApp
                     return;
                 }
 
+                if (path.Equals("api/pickpdf", StringComparison.OrdinalIgnoreCase))
+                {
+                    var picked = FilePicker.PickPdf();
+                    WriteJson(context, new { Path = picked ?? "" });
+                    return;
+                }
+
                 context.Response.StatusCode = 404;
                 context.Response.Close();
             }

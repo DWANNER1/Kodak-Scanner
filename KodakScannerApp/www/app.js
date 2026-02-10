@@ -24,6 +24,9 @@
   var lastOutputRoot = "";
   var lastJobDir = "";
   var zoomState = {};
+  var scrollState = {};
+  var imageVersion = {};
+  var lastFilesKey = "";
 
   function setActiveTab(tabName) {
     navItems.forEach(function (item) {
@@ -91,6 +94,11 @@
 
       setStatus(state, message, tone);
       if (status.Files) {
+        var nextKey = status.Files.join("|");
+        if (nextKey === lastFilesKey) {
+          return;
+        }
+        lastFilesKey = nextKey;
         filesEl.innerHTML = "";
         status.Files.forEach(function (f) {
           var li = document.createElement("li");
@@ -111,7 +119,8 @@
           var rel = toRelativeScanPath(f, lastOutputRoot);
           if (rel) {
             img.dataset.baseSrc = "/scans/" + rel;
-            img.src = img.dataset.baseSrc;
+            var v = imageVersion[f] || "";
+            img.src = img.dataset.baseSrc + (v ? "?v=" + v : "");
           }
 
           img.dataset.scale = "1";
@@ -147,6 +156,8 @@
                 return;
               }
               delete zoomState[f];
+              delete imageVersion[f];
+              delete scrollState[f];
               refreshStatus();
             });
           });
@@ -161,6 +172,16 @@
           wrap.className = "file-thumb-wrap";
           wrap.appendChild(img);
           enableDragScroll(wrap);
+
+          var savedScroll = scrollState[f];
+          if (savedScroll) {
+            wrap.scrollLeft = savedScroll.left;
+            wrap.scrollTop = savedScroll.top;
+          }
+
+          wrap.addEventListener("scroll", function () {
+            scrollState[f] = { left: wrap.scrollLeft, top: wrap.scrollTop };
+          });
 
           li.appendChild(wrap);
           li.appendChild(actions);
@@ -190,8 +211,9 @@
         alert(res.Message || "Rotate failed");
         return;
       }
+      imageVersion[path] = Date.now();
       if (img && img.dataset.baseSrc) {
-        img.src = img.dataset.baseSrc + "?v=" + Date.now();
+        img.src = img.dataset.baseSrc + "?v=" + imageVersion[path];
       }
     });
   }
@@ -219,8 +241,8 @@
   function iconPath(name) {
     if (name === "zoom_in") return "M10.5 3a7.5 7.5 0 0 1 5.99 12.06l4.23 4.23-1.42 1.42-4.23-4.23A7.5 7.5 0 1 1 10.5 3zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11zm-1 2h2v2h2v2h-2v2h-2v-2h-2V9h2V7z";
     if (name === "zoom_out") return "M10.5 3a7.5 7.5 0 0 1 5.99 12.06l4.23 4.23-1.42 1.42-4.23-4.23A7.5 7.5 0 1 1 10.5 3zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11zm-3 4h6v2h-6V9z";
-    if (name === "rotate_left") return "M7 7h5V4l4 4-4 4V9H7a5 5 0 1 0 5 5h2a7 7 0 1 1-7-7z";
-    if (name === "rotate_right") return "M17 7h-5V4l-4 4 4 4V9h5a5 5 0 1 1-5 5H5a7 7 0 1 0 12-7z";
+    if (name === "rotate_left") return "M7.8 7.1H12V4l4.5 4.5L12 13V9.9H7.8a5.7 5.7 0 1 0 5.6 7.2l2 .6A7.7 7.7 0 1 1 7.8 7.1z";
+    if (name === "rotate_right") return "M16.2 7.1H12V4L7.5 8.5 12 13V9.9h4.2a5.7 5.7 0 1 1-5.6 7.2l-2 .6a7.7 7.7 0 1 0 7.6-10.6z";
     return "M6 7h12l-1 14H7L6 7zm3-3h6l1 2H8l1-2z";
   }
 
@@ -298,7 +320,8 @@
       Format: document.getElementById("format").value,
       OutputPath: document.getElementById("outputPath").value,
       BaseName: document.getElementById("baseName").value,
-      Append: !!append
+      Append: !!append,
+      AppendPath: append ? (document.getElementById("outputPath").value + "\\" + document.getElementById("baseName").value + ".pdf") : ""
     };
 
     apiPost("/api/export", payload).then(function (res) {
@@ -318,7 +341,19 @@
   });
 
   document.getElementById("appendBtn").addEventListener("click", function (event) {
-    handleExport(true, event);
+    event.preventDefault();
+    event.stopPropagation();
+    apiGet("/api/pickpdf").then(function (res) {
+      if (!res || !res.Path) {
+        return;
+      }
+      var path = res.Path;
+      var dir = path.replace(/\\[^\\]+$/, "");
+      var base = path.replace(/^.*[\\\/]/, "").replace(/\.pdf$/i, "");
+      document.getElementById("outputPath").value = dir;
+      document.getElementById("baseName").value = base;
+      handleExport(true);
+    });
   });
 
   document.getElementById("clearBtn").addEventListener("click", function (event) {

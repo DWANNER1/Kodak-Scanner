@@ -346,6 +346,7 @@ button.ghost:hover {
 .file-actions {
   display: flex;
   gap: 8px;
+  order: -1;
   justify-content: flex-end;
 }
 

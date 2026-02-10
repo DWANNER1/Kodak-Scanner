@@ -155,6 +155,12 @@ namespace KodakScannerApp
             if (format == "pdf")
             {
                 var outputFile = Path.Combine(outputDir, baseName + ".pdf");
+                if (request.Append && !string.IsNullOrWhiteSpace(request.AppendPath))
+                {
+                    outputFile = request.AppendPath;
+                    outputDir = Path.GetDirectoryName(outputFile) ?? outputDir;
+                }
+
                 if (request.Append && File.Exists(outputFile))
                 {
                     var merged = new List<string>();

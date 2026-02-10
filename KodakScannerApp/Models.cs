@@ -24,6 +24,7 @@ namespace KodakScannerApp
         public string OutputPath { get; set; }
         public string BaseName { get; set; }
         public bool Append { get; set; }
+        public string AppendPath { get; set; }
     }
 
     public class DeleteRequest
