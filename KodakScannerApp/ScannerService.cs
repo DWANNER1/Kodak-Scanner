@@ -290,7 +290,6 @@ namespace KodakScannerApp
                     _pages.Clear();
                     _pages.AddRange(otherFolders);
                     _pages.AddRange(sameFolder);
-                    _pages.Sort((a, b) => CompareFolderThenPage(a.Path, b.Path));
                     _status.PagesScanned = _pages.Count;
                     return new ApiResult { Ok = true, Message = "Deleted" };
                 }
@@ -381,18 +380,17 @@ namespace KodakScannerApp
                 RenumberPagesInFolder(folder, orderedPages);
                 lock (_lock)
                 {
-                    var other = new List<PageItem>();
+                    var rebuilt = new List<PageItem>();
                     foreach (var page in _pages)
                     {
                         if (!string.Equals(Path.GetDirectoryName(page.Path), folder, StringComparison.OrdinalIgnoreCase))
                         {
-                            other.Add(page);
+                            rebuilt.Add(page);
                         }
                     }
+                    rebuilt.AddRange(orderedPages);
                     _pages.Clear();
-                    _pages.AddRange(other);
-                    _pages.AddRange(orderedPages);
-                    _pages.Sort((a, b) => CompareFolderThenPage(a.Path, b.Path));
+                    _pages.AddRange(rebuilt);
                     _status.PagesScanned = _pages.Count;
                 }
 
@@ -435,18 +433,6 @@ namespace KodakScannerApp
                 return leftNum.CompareTo(rightNum);
             }
             return string.Compare(left, right, StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static int CompareFolderThenPage(string left, string right)
-        {
-            var leftDir = Path.GetDirectoryName(left) ?? "";
-            var rightDir = Path.GetDirectoryName(right) ?? "";
-            var dirCompare = string.Compare(leftDir, rightDir, StringComparison.OrdinalIgnoreCase);
-            if (dirCompare != 0)
-            {
-                return dirCompare;
-            }
-            return ComparePageNames(left, right);
         }
 
         private static int ExtractPageNumber(string path)
