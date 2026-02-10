@@ -35,6 +35,7 @@
       "dist/**/*",
       "electron/**/*"
     ],
+    "icon": "electron/assets/app.ico",
     "win": {
       "target": [
         {
@@ -43,7 +44,8 @@
             "x64"
           ]
         }
-      ]
+      ],
+      "icon": "electron/assets/app.ico"
     }
   }
 }
