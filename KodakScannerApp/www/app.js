@@ -102,22 +102,17 @@
           var actions = document.createElement("div");
           actions.className = "file-actions";
 
-          var zoomIn = document.createElement("button");
-          zoomIn.type = "button";
-          zoomIn.textContent = "Zoom In";
-
-          var zoomOut = document.createElement("button");
-          zoomOut.type = "button";
-          zoomOut.textContent = "Zoom Out";
-
-          var del = document.createElement("button");
-          del.type = "button";
-          del.textContent = "Delete";
-          del.className = "danger";
+          var zoomOut = buildIconButton("Zoom out", "zoom_out");
+          var zoomIn = buildIconButton("Zoom in", "zoom_in");
+          var rotateLeft = buildIconButton("Rotate left", "rotate_left");
+          var rotateRight = buildIconButton("Rotate right", "rotate_right");
+          var del = buildIconButton("Delete", "trash");
+          del.classList.add("danger");
 
           var rel = toRelativeScanPath(f, lastOutputRoot);
           if (rel) {
-            img.src = "/scans/" + rel;
+            img.dataset.baseSrc = "/scans/" + rel;
+            img.src = img.dataset.baseSrc;
           }
 
           img.dataset.scale = "1";
@@ -133,6 +128,12 @@
             img.dataset.scale = next.toString();
             img.style.transform = "scale(" + next + ")";
           });
+          rotateLeft.addEventListener("click", function () {
+            rotateFile(f, "left", img);
+          });
+          rotateRight.addEventListener("click", function () {
+            rotateFile(f, "right", img);
+          });
           del.addEventListener("click", function () {
             if (!confirm("Delete this scan?")) return;
             apiPost("/api/delete", { Path: f }).then(function (res) {
@@ -146,6 +147,8 @@
 
           actions.appendChild(zoomOut);
           actions.appendChild(zoomIn);
+          actions.appendChild(rotateLeft);
+          actions.appendChild(rotateRight);
           actions.appendChild(del);
 
           li.appendChild(img);
@@ -167,6 +170,46 @@
     if (normalizedFile.indexOf(normalizedRoot) !== 0) return "";
     var rel = normalizedFile.substring(normalizedRoot.length);
     return encodeURI(rel);
+  }
+
+  function rotateFile(path, direction, img) {
+    apiPost("/api/rotate", { Path: path, Direction: direction }).then(function (res) {
+      if (!res.Ok) {
+        alert(res.Message || "Rotate failed");
+        return;
+      }
+      if (img && img.dataset.baseSrc) {
+        img.src = img.dataset.baseSrc + "?v=" + Date.now();
+      }
+    });
+  }
+
+  function buildIconButton(label, iconName) {
+    var button = document.createElement("button");
+    button.type = "button";
+    button.className = "icon-btn";
+    button.setAttribute("aria-label", label);
+    button.title = label;
+    button.appendChild(buildIcon(iconName));
+    return button;
+  }
+
+  function buildIcon(name) {
+    var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("aria-hidden", "true");
+    var path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", iconPath(name));
+    svg.appendChild(path);
+    return svg;
+  }
+
+  function iconPath(name) {
+    if (name === "zoom_in") return "M10.5 3a7.5 7.5 0 0 1 5.99 12.06l4.23 4.23-1.42 1.42-4.23-4.23A7.5 7.5 0 1 1 10.5 3zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11zm-1 2h2v2h2v2h-2v2h-2v-2h-2V9h2V7z";
+    if (name === "zoom_out") return "M10.5 3a7.5 7.5 0 0 1 5.99 12.06l4.23 4.23-1.42 1.42-4.23-4.23A7.5 7.5 0 1 1 10.5 3zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11zm-3 4h6v2h-6V9z";
+    if (name === "rotate_left") return "M7 7h5V4l4 4-4 4V9H7a5 5 0 1 0 5 5h2a7 7 0 1 1-7-7z";
+    if (name === "rotate_right") return "M17 7h-5V4l-4 4 4 4V9h5a5 5 0 1 1-5 5H5a7 7 0 1 0 12-7z";
+    return "M6 7h12l-1 14H7L6 7zm3-3h6l1 2H8l1-2z";
   }
 
   document.getElementById("scanBtn").addEventListener("click", function (event) {

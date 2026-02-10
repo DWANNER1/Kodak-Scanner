@@ -348,18 +348,34 @@ button.ghost:hover {
   justify-content: flex-end;
 }
 
-.file-actions button {
-  padding: 6px 10px;
-  font-size: 11px;
-  border-radius: 8px;
+.icon-btn {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 10px;
+  background: #eef2fa;
+  color: #2f3a52;
 }
 
-.file-actions button.danger {
+.icon-btn svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.icon-btn:hover {
+  background: #e1e7f5;
+}
+
+.icon-btn.danger {
   background: #f3d6d6;
   color: #7d2d2d;
 }
 
-.file-actions button.danger:hover {
+.icon-btn.danger:hover {
   background: #eec2c2;
 }
 

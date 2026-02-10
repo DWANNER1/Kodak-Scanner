@@ -89,11 +89,19 @@ namespace KodakScannerApp
                     var jobDir = Path.Combine(_outputRoot, DateTime.Now.ToString("yyyyMMdd_HHmmss"));
                     Directory.CreateDirectory(jobDir);
 
-                    var files = _scanner.ScanToFiles(settings, jobDir);
+                    _scanner.ScanToFiles(settings, jobDir, path =>
+                    {
+                        lock (_lock)
+                        {
+                            _scannedFiles.Add(path);
+                            _status.State = "scanning";
+                            _status.Message = "Scanning... (" + _scannedFiles.Count + ")";
+                            _status.PagesScanned = _scannedFiles.Count;
+                        }
+                    });
 
                     lock (_lock)
                     {
-                        _scannedFiles.AddRange(files);
                         _status.State = "done";
                         _status.Message = "Scan complete";
                         _status.PagesScanned = _scannedFiles.Count;
@@ -184,6 +192,10 @@ namespace KodakScannerApp
 
             lock (_lock)
             {
+                if (!IsUnderOutputRoot(filePath))
+                {
+                    return new ApiResult { Ok = false, Message = "Invalid file path" };
+                }
                 if (!File.Exists(filePath))
                 {
                     return new ApiResult { Ok = false, Message = "File not found" };
@@ -201,6 +213,87 @@ namespace KodakScannerApp
                     return new ApiResult { Ok = false, Message = ex.Message };
                 }
             }
+        }
+
+        public ApiResult RotateFile(string filePath, string direction)
+        {
+            if (string.IsNullOrWhiteSpace(filePath))
+            {
+                return new ApiResult { Ok = false, Message = "Missing file path" };
+            }
+
+            if (!IsUnderOutputRoot(filePath))
+            {
+                return new ApiResult { Ok = false, Message = "Invalid file path" };
+            }
+
+            if (!File.Exists(filePath))
+            {
+                return new ApiResult { Ok = false, Message = "File not found" };
+            }
+
+            var rotateFlip = ParseRotate(direction);
+            if (rotateFlip == null)
+            {
+                return new ApiResult { Ok = false, Message = "Invalid rotate direction" };
+            }
+
+            try
+            {
+                var ext = Path.GetExtension(filePath).ToLowerInvariant();
+                var tempPath = filePath + ".tmp";
+
+                using (var image = System.Drawing.Image.FromFile(filePath))
+                {
+                    image.RotateFlip(rotateFlip.Value);
+                    var format = GetImageFormat(ext);
+                    image.Save(tempPath, format);
+                }
+
+                File.Copy(tempPath, filePath, true);
+                File.Delete(tempPath);
+
+                return new ApiResult { Ok = true, Message = "Rotated" };
+            }
+            catch (Exception ex)
+            {
+                return new ApiResult { Ok = false, Message = ex.Message };
+            }
+        }
+
+        private bool IsUnderOutputRoot(string filePath)
+        {
+            try
+            {
+                var fullPath = Path.GetFullPath(filePath);
+                var rootPath = Path.GetFullPath(_outputRoot + Path.DirectorySeparatorChar);
+                return fullPath.StartsWith(rootPath, StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static System.Drawing.Imaging.ImageFormat GetImageFormat(string ext)
+        {
+            if (ext == ".png") return System.Drawing.Imaging.ImageFormat.Png;
+            if (ext == ".bmp") return System.Drawing.Imaging.ImageFormat.Bmp;
+            if (ext == ".tif" || ext == ".tiff") return System.Drawing.Imaging.ImageFormat.Tiff;
+            return System.Drawing.Imaging.ImageFormat.Jpeg;
+        }
+
+        private static System.Drawing.RotateFlipType? ParseRotate(string direction)
+        {
+            if (string.Equals(direction, "left", StringComparison.OrdinalIgnoreCase))
+            {
+                return System.Drawing.RotateFlipType.Rotate270FlipNone;
+            }
+            if (string.Equals(direction, "right", StringComparison.OrdinalIgnoreCase))
+            {
+                return System.Drawing.RotateFlipType.Rotate90FlipNone;
+            }
+            return null;
         }
     }
 }

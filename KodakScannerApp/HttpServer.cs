@@ -196,6 +196,15 @@ namespace KodakScannerApp
                     return;
                 }
 
+                if (path.Equals("api/rotate", StringComparison.OrdinalIgnoreCase) && context.Request.HttpMethod == "POST")
+                {
+                    var body = ReadBody(context.Request);
+                    var request = _json.Deserialize<RotateRequest>(body);
+                    var result = _scannerService.RotateFile(request?.Path, request?.Direction);
+                    WriteJson(context, result);
+                    return;
+                }
+
                 context.Response.StatusCode = 404;
                 context.Response.Close();
             }

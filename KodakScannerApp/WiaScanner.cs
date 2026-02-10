@@ -38,7 +38,7 @@ namespace KodakScannerApp
             return list;
         }
 
-        public List<string> ScanToFiles(ScanSettings settings, string outputDir)
+        public List<string> ScanToFiles(ScanSettings settings, string outputDir, Action<string> onPageSaved)
         {
             var files = new List<string>();
             try
@@ -110,7 +110,7 @@ namespace KodakScannerApp
                     }
                     catch (InvalidOperationException ex) when (ex.Message.Contains("0x80070057"))
                     {
-                        return ScanWithCommonDialog(settings, outputDir);
+                        return ScanWithCommonDialog(settings, outputDir, onPageSaved);
                     }
                     if (image == null)
                     {
@@ -121,6 +121,7 @@ namespace KodakScannerApp
                     var basePath = Path.Combine(outputDir, "page_" + page.ToString("000"));
                     var path = SaveImageWithFallback(image, basePath);
                     files.Add(path);
+                    onPageSaved?.Invoke(path);
 
                     if (page >= settings.MaxPages)
                     {
@@ -272,7 +273,7 @@ namespace KodakScannerApp
             return null;
         }
 
-        private static List<string> ScanWithCommonDialog(ScanSettings settings, string outputDir)
+        private static List<string> ScanWithCommonDialog(ScanSettings settings, string outputDir, Action<string> onPageSaved)
         {
             var files = new List<string>();
             dynamic common = Activator.CreateInstance(Type.GetTypeFromProgID("WIA.CommonDialog"));
@@ -313,6 +314,7 @@ namespace KodakScannerApp
                 var basePath = Path.Combine(outputDir, "page_" + page.ToString("000"));
                 var path = SaveImageWithFallback(image, basePath);
                 files.Add(path);
+                onPageSaved?.Invoke(path);
             }
 
             return files;

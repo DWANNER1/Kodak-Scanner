@@ -30,6 +30,12 @@ namespace KodakScannerApp
         public string Path { get; set; }
     }
 
+    public class RotateRequest
+    {
+        public string Path { get; set; }
+        public string Direction { get; set; }
+    }
+
     public class ApiResult
     {
         public bool Ok { get; set; }
