@@ -278,6 +278,7 @@ namespace KodakScannerApp
                     _scannedFiles.Clear();
                     _scannedFiles.AddRange(otherFolders);
                     _scannedFiles.AddRange(updated);
+                    _scannedFiles.Sort(CompareFolderThenPage);
                     _status.PagesScanned = _scannedFiles.Count;
                     return new ApiResult { Ok = true, Message = "Deleted", Files = new List<string>(_scannedFiles) };
                 }
@@ -361,6 +362,7 @@ namespace KodakScannerApp
                 {
                     _scannedFiles.Clear();
                     _scannedFiles.AddRange(newList);
+                    _scannedFiles.Sort(CompareFolderThenPage);
                     _status.PagesScanned = _scannedFiles.Count;
                 }
 
@@ -406,6 +408,18 @@ namespace KodakScannerApp
                 return leftNum.CompareTo(rightNum);
             }
             return string.Compare(left, right, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static int CompareFolderThenPage(string left, string right)
+        {
+            var leftDir = Path.GetDirectoryName(left) ?? "";
+            var rightDir = Path.GetDirectoryName(right) ?? "";
+            var dirCompare = string.Compare(leftDir, rightDir, StringComparison.OrdinalIgnoreCase);
+            if (dirCompare != 0)
+            {
+                return dirCompare;
+            }
+            return ComparePageNames(left, right);
         }
 
         private static int ExtractPageNumber(string path)

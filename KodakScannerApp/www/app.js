@@ -27,6 +27,7 @@
   var scrollState = {};
   var imageVersion = {};
   var lastFilesKey = "";
+  var isDragging = false;
 
   function setActiveTab(tabName) {
     navItems.forEach(function (item) {
@@ -94,12 +95,16 @@
 
       setStatus(state, message, tone);
       if (status.Files) {
+        if (isDragging) {
+          return;
+        }
         var nextKey = status.Files.join("|");
         lastFilesKey = nextKey;
         filesEl.innerHTML = "";
         var previousCount = parseInt(filesEl.dataset.count || "0", 10);
         filesEl.dataset.count = status.Files.length.toString();
         status.Files.forEach(function (f, index) {
+          var filePath = f;
           var li = document.createElement("li");
           var img = document.createElement("img");
           img.className = "file-thumb";
@@ -112,7 +117,7 @@
           ball.className = "page-ball";
           ball.textContent = (index + 1).toString();
           ball.setAttribute("draggable", "true");
-          ball.dataset.path = f;
+          ball.dataset.path = filePath;
 
           var zoomOut = buildIconButton("Zoom out", "zoom_out");
           var zoomIn = buildIconButton("Zoom in", "zoom_in");
@@ -121,7 +126,7 @@
           var del = buildIconButton("Delete", "trash");
           del.classList.add("danger");
 
-          var rel = toRelativeScanPath(f, lastOutputRoot);
+          var rel = toRelativeScanPath(filePath, lastOutputRoot);
           if (rel) {
             img.dataset.baseSrc = "/scans/" + rel;
             var v = imageVersion[f] || "";
@@ -132,7 +137,7 @@
           img.style.transformOrigin = "center center";
           img.style.transition = "transform 0.15s ease";
 
-          var scale = zoomState[f] || 1;
+          var scale = zoomState[filePath] || 1;
           img.dataset.scale = scale.toString();
           img.style.transform = "scale(" + scale + ")";
           if (scale > 1) {
@@ -142,32 +147,33 @@
             var next = Math.min(3, parseFloat(img.dataset.scale || "1") + 0.25);
             img.dataset.scale = next.toString();
             img.style.transform = "scale(" + next + ")";
-            zoomState[f] = next;
+            zoomState[filePath] = next;
             wrap.classList.toggle("zoomed", next > 1);
           });
           zoomOut.addEventListener("click", function () {
             var next = Math.max(0.5, parseFloat(img.dataset.scale || "1") - 0.25);
             img.dataset.scale = next.toString();
             img.style.transform = "scale(" + next + ")";
-            zoomState[f] = next;
+            zoomState[filePath] = next;
             wrap.classList.toggle("zoomed", next > 1);
           });
           rotateLeft.addEventListener("click", function () {
-            rotateFile(f, "left", img);
+            rotateFile(filePath, "left", img);
           });
           rotateRight.addEventListener("click", function () {
-            rotateFile(f, "right", img);
+            rotateFile(filePath, "right", img);
           });
           del.addEventListener("click", function () {
             if (!confirm("Delete this scan?")) return;
-            apiPost("/api/delete", { Path: f }).then(function (res) {
+            apiPost("/api/delete", { Path: filePath }).then(function (res) {
               if (!res.Ok) {
                 alert(res.Message || "Delete failed");
                 return;
               }
-              delete zoomState[f];
-              delete imageVersion[f];
-              delete scrollState[f];
+              delete zoomState[filePath];
+              delete imageVersion[filePath];
+              delete scrollState[filePath];
+              lastFilesKey = "";
               refreshStatus();
             });
           });
@@ -184,17 +190,17 @@
           wrap.appendChild(img);
           enableDragScroll(wrap);
 
-          var savedScroll = scrollState[f];
+          var savedScroll = scrollState[filePath];
           if (savedScroll) {
             wrap.scrollLeft = savedScroll.left;
             wrap.scrollTop = savedScroll.top;
           }
 
           wrap.addEventListener("scroll", function () {
-            scrollState[f] = { left: wrap.scrollLeft, top: wrap.scrollTop };
+            scrollState[filePath] = { left: wrap.scrollLeft, top: wrap.scrollTop };
           });
 
-          li.dataset.path = f;
+          li.dataset.path = filePath;
           li.appendChild(wrap);
           li.appendChild(actions);
           filesEl.appendChild(li);
@@ -312,6 +318,7 @@
       if (!target || !target.classList.contains("page-ball")) return;
       dragPath = target.dataset.path || "";
       target.classList.add("dragging");
+      isDragging = true;
       e.dataTransfer.effectAllowed = "move";
       e.dataTransfer.setData("text/plain", dragPath);
     });
@@ -322,6 +329,7 @@
         target.classList.remove("dragging");
       }
       dragPath = "";
+      isDragging = false;
     });
 
     filesEl.addEventListener("dragover", function (e) {
@@ -360,6 +368,7 @@
         if (!res.Ok) {
           alert(res.Message || "Reorder failed");
         }
+        lastFilesKey = "";
         refreshStatus();
       });
 
