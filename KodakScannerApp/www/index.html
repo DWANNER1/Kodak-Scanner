@@ -6,79 +6,122 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="app">
-    <header>
-      <h1>Kodak Scanmate i1150</h1>
-      <div class="status" id="status">Idle</div>
-    </header>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="device-art">
+          <img src="https://i.pcmag.com/imagery/reviews/00utxy9pw3jsebzmkxq5jxw-2-hero-image-gallery.fit_scale.size_1028x578.v1569475994.jpg" alt="Kodak ScanMate i1150 scanner" />
+        </div>
+        <div class="brand-text">
+          <div class="brand-title">Kodak ScanMate i1150</div>
+          <div class="brand-sub">Reference panel</div>
+        </div>
+      </div>
 
-    <section class="panel">
-      <h2>Scanner Settings</h2>
-      <div class="grid">
-        <label>
-          Device
-          <select id="deviceSelect"></select>
-        </label>
-        <label>
-          DPI
-          <input id="dpi" type="number" value="300" min="75" max="1200" />
-        </label>
-        <label>
-          Color Mode
-          <select id="colorMode">
-            <option value="color">Color</option>
-            <option value="gray">Grayscale</option>
-            <option value="bw">Black & White</option>
-          </select>
-        </label>
-        <label>
-          Duplex
-          <select id="duplex">
-            <option value="false">Off</option>
-            <option value="true">On</option>
-          </select>
-        </label>
-        <label>
-          Max Pages
-          <input id="maxPages" type="number" value="100" min="1" max="500" />
-        </label>
+      <div class="search">
+        <input type="text" placeholder="Search settings" aria-label="Search settings" />
       </div>
-      <div class="actions">
-        <button id="scanBtn">Start Scan</button>
-        <button id="clearBtn">Clear</button>
-      </div>
-    </section>
 
-    <section class="panel">
-      <h2>Export</h2>
-      <div class="grid">
-        <label>
-          Output Format
-          <select id="format">
-            <option value="pdf">PDF (multi-page)</option>
-            <option value="tiff">TIFF (multi-page)</option>
-            <option value="jpg">JPG (separate files)</option>
-            <option value="png">PNG (separate files)</option>
-          </select>
-        </label>
-        <label>
-          Output Folder
-          <input id="outputPath" type="text" placeholder="C:\\Users\\...\\Documents\\Scans" />
-        </label>
-        <label>
-          Base Name
-          <input id="baseName" type="text" value="scan" />
-        </label>
-      </div>
-      <div class="actions">
-        <button id="exportBtn">Export</button>
-      </div>
-    </section>
+      <nav class="nav">
+        <button class="nav-item active" type="button">Scanner</button>
+        <button class="nav-item" type="button">Output</button>
+        <button class="nav-item" type="button">Automation</button>
+        <button class="nav-item" type="button">Maintenance</button>
+        <button class="nav-item" type="button">About</button>
+      </nav>
 
-    <section class="panel">
-      <h2>Scanned Pages</h2>
-      <ul id="files"></ul>
-    </section>
+      <div class="sidebar-foot">
+        <div class="status-label">Status</div>
+        <div class="status-pill" id="status">Idle</div>
+      </div>
+    </aside>
+
+    <main class="content">
+      <header class="topbar">
+        <div>
+          <div class="eyebrow">Scanner</div>
+          <h1>Preferences</h1>
+          <p>Set up the device, quality, and export options in one place.</p>
+        </div>
+        <div class="topbar-actions">
+          <button id="scanBtn" class="primary" type="button">Start Scan</button>
+          <button id="clearBtn" class="ghost" type="button">Clear</button>
+        </div>
+      </header>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>Scanner Settings</h2>
+          <span class="chip">Device</span>
+        </div>
+        <div class="form-grid">
+          <label>
+            Device
+            <select id="deviceSelect"></select>
+          </label>
+          <label>
+            DPI
+            <input id="dpi" type="number" value="300" min="75" max="1200" />
+          </label>
+          <label>
+            Color Mode
+            <select id="colorMode">
+              <option value="color">Color</option>
+              <option value="gray">Grayscale</option>
+              <option value="bw">Black &amp; White</option>
+            </select>
+          </label>
+          <label>
+            Duplex
+            <select id="duplex">
+              <option value="false">Off</option>
+              <option value="true">On</option>
+            </select>
+          </label>
+          <label>
+            Max Pages
+            <input id="maxPages" type="number" value="100" min="1" max="500" />
+          </label>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>Export</h2>
+          <span class="chip">Output</span>
+        </div>
+        <div class="form-grid">
+          <label>
+            Output Format
+            <select id="format">
+              <option value="pdf">PDF (multi-page)</option>
+              <option value="tiff">TIFF (multi-page)</option>
+              <option value="jpg">JPG (separate files)</option>
+              <option value="png">PNG (separate files)</option>
+            </select>
+          </label>
+          <label>
+            Output Folder
+            <input id="outputPath" type="text" placeholder="C:\\Users\\...\\Documents\\Scans" />
+          </label>
+          <label>
+            Base Name
+            <input id="baseName" type="text" value="scan" />
+          </label>
+        </div>
+        <div class="actions">
+          <button id="exportBtn" class="primary" type="button">Export</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>Scanned Pages</h2>
+          <span class="chip">Queue</span>
+        </div>
+        <ul id="files" class="file-list"></ul>
+      </section>
+    </main>
   </div>
 
   <script src="app.js"></script>
