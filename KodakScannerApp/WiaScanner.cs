@@ -18,6 +18,10 @@ namespace KodakScannerApp
         private const int WIA_DPS_DOCUMENT_HANDLING_STATUS_FEED_READY = 0x1;
         private const string WIA_FORMAT_BMP = "{B96B3CAB-0728-11D3-9D7B-0000F81EF32E}";
         private const string WIA_FORMAT_JPEG = "{B96B3CAE-0728-11D3-9D7B-0000F81EF32E}";
+        private const int WIA_DEVICE_TYPE_SCANNER = 1;
+        private const int WIA_INTENT_COLOR = 1;
+        private const int WIA_INTENT_GRAYSCALE = 2;
+        private const int WIA_INTENT_TEXT = 4;
 
         public List<DeviceInfoDto> ListDevices()
         {
@@ -99,7 +103,15 @@ namespace KodakScannerApp
                         break;
                     }
 
-                    dynamic image = TransferWithFallback(common, item);
+                    dynamic image;
+                    try
+                    {
+                        image = TransferWithFallback(common, item);
+                    }
+                    catch (InvalidOperationException ex) when (ex.Message.Contains("0x80070057"))
+                    {
+                        return ScanWithCommonDialog(settings, outputDir);
+                    }
                     if (image == null)
                     {
                         break;
@@ -258,6 +270,44 @@ namespace KodakScannerApp
             }
 
             return null;
+        }
+
+        private static List<string> ScanWithCommonDialog(ScanSettings settings, string outputDir)
+        {
+            var files = new List<string>();
+            dynamic common = Activator.CreateInstance(Type.GetTypeFromProgID("WIA.CommonDialog"));
+            var intent = MapIntent(settings.ColorMode);
+            var format = intent == WIA_INTENT_COLOR ? WIA_FORMAT_JPEG : WIA_FORMAT_BMP;
+
+            for (var page = 1; page <= settings.MaxPages; page++)
+            {
+                dynamic image = common.ShowAcquireImage(
+                    WIA_DEVICE_TYPE_SCANNER,
+                    intent,
+                    0,
+                    format,
+                    false,
+                    true,
+                    false);
+
+                if (image == null)
+                {
+                    break;
+                }
+
+                var basePath = Path.Combine(outputDir, "page_" + page.ToString("000"));
+                var path = SaveImageWithFallback(image, basePath);
+                files.Add(path);
+            }
+
+            return files;
+        }
+
+        private static int MapIntent(string mode)
+        {
+            if (string.Equals(mode, "bw", StringComparison.OrdinalIgnoreCase)) return WIA_INTENT_TEXT;
+            if (string.Equals(mode, "gray", StringComparison.OrdinalIgnoreCase)) return WIA_INTENT_GRAYSCALE;
+            return WIA_INTENT_COLOR;
         }
 
         private static string SaveImageWithFallback(dynamic image, string basePath)
