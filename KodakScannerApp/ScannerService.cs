@@ -233,11 +233,11 @@ namespace KodakScannerApp
             }
         }
 
-        public ApiResult DeleteFile(string filePath, int? index, string folder)
+        public ApiResult DeleteFile(string filePath, int? index, string folderPath)
         {
-            if (!string.IsNullOrWhiteSpace(folder) && index.HasValue)
+            if (!string.IsNullOrWhiteSpace(folderPath) && index.HasValue)
             {
-                filePath = ResolvePathByIndex(folder, index.Value);
+                filePath = ResolvePathByIndex(folderPath, index.Value);
             }
 
             if (string.IsNullOrWhiteSpace(filePath))
