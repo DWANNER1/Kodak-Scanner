@@ -152,33 +152,9 @@ namespace KodakScannerApp
             using (var ms = new MemoryStream())
             {
                 g.DrawImage(image, 0, 0, image.Width, image.Height);
-                var encoder = GetJpegEncoder();
-                if (encoder != null)
-                {
-                    using (var parameters = new EncoderParameters(1))
-                    {
-                        parameters.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, (byte)95);
-                        bmp.Save(ms, encoder, parameters);
-                    }
-                }
-                else
-                {
-                    bmp.Save(ms, ImageFormat.Jpeg);
-                }
+                bmp.Save(ms, ImageFormat.Jpeg);
                 return ms.ToArray();
             }
-        }
-
-        private static ImageCodecInfo GetJpegEncoder()
-        {
-            foreach (var codec in ImageCodecInfo.GetImageEncoders())
-            {
-                if (codec.MimeType == "image/jpeg")
-                {
-                    return codec;
-                }
-            }
-            return null;
         }
 
         private static PageSize GetPageSize(string imageFile)

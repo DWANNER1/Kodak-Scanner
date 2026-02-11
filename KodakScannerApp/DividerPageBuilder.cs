@@ -67,27 +67,7 @@ namespace KodakScannerApp
                     }
                 }
 
-                try
-                {
-                    var encoder = GetJpegEncoder();
-                    if (encoder != null)
-                    {
-                        using (var parameters = new EncoderParameters(1))
-                        {
-                            parameters.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, (byte)95);
-                            bmp.Save(filePath, encoder, parameters);
-                        }
-                    }
-                    else
-                    {
-                        bmp.Save(filePath, ImageFormat.Jpeg);
-                    }
-                }
-                catch
-                {
-                    filePath = Path.Combine(outputDir, baseName + ".png");
-                    bmp.Save(filePath, ImageFormat.Png);
-                }
+                bmp.Save(filePath, ImageFormat.Jpeg);
             }
 
             return filePath;
@@ -111,16 +91,5 @@ namespace KodakScannerApp
             return new Font("Segoe UI", minSize, FontStyle.Bold, GraphicsUnit.Point);
         }
 
-        private static ImageCodecInfo GetJpegEncoder()
-        {
-            foreach (var codec in ImageCodecInfo.GetImageEncoders())
-            {
-                if (codec.MimeType == "image/jpeg")
-                {
-                    return codec;
-                }
-            }
-            return null;
-        }
     }
 }
