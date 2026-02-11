@@ -43,6 +43,8 @@
   var headerText = document.getElementById("headerText");
   var headerBuild = document.getElementById("headerBuild");
   var headerCancel = document.getElementById("headerCancel");
+  var aboutBuild = document.getElementById("aboutBuild");
+  var aboutVersion = document.getElementById("aboutVersion");
 
   function logEvent(label, data) {
     if (!debugEl) return;
@@ -68,6 +70,19 @@
     apiGet("/api/logs").then(function (res) {
       if (!res || !res.Lines) return;
       serverLogEl.textContent = res.Lines.join("\n");
+    });
+  }
+
+  function refreshAbout() {
+    if (!aboutBuild && !aboutVersion) return;
+    apiGet("/api/about").then(function (res) {
+      if (!res) return;
+      if (aboutBuild && res.BuildTime) {
+        aboutBuild.textContent = res.BuildTime;
+      }
+      if (aboutVersion && res.Version) {
+        aboutVersion.textContent = res.Version;
+      }
     });
   }
 
@@ -559,6 +574,7 @@
     });
   }
   refreshServerLog();
+  refreshAbout();
 
   function openHeaderModal() {
     if (!headerModal) return;

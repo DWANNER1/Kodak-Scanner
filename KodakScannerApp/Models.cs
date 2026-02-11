@@ -75,4 +75,10 @@ namespace KodakScannerApp
         public string OutputRoot { get; set; }
         public string CurrentJobDir { get; set; }
     }
+
+    public class AboutInfo
+    {
+        public string Version { get; set; }
+        public string BuildTime { get; set; }
+    }
 }

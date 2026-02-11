@@ -250,6 +250,12 @@ namespace KodakScannerApp
                     return;
                 }
 
+                if (path.Equals("api/about", StringComparison.OrdinalIgnoreCase))
+                {
+                    WriteJson(context, _scannerService.GetAboutInfo());
+                    return;
+                }
+
                 if (path.Equals("api/pickpdf", StringComparison.OrdinalIgnoreCase))
                 {
                     var picked = FilePicker.PickPdf();

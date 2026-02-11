@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using System.Reflection;
 
 namespace KodakScannerApp
 {
@@ -223,6 +224,33 @@ namespace KodakScannerApp
             {
                 Logger.Log("pdf load error " + ex.Message);
                 return new ApiResult { Ok = false, Message = ex.Message };
+            }
+        }
+
+        public AboutInfo GetAboutInfo()
+        {
+            try
+            {
+                var assembly = Assembly.GetExecutingAssembly();
+                var version = assembly.GetName().Version?.ToString() ?? "";
+                var location = assembly.Location;
+                var buildTime = File.Exists(location)
+                    ? File.GetLastWriteTime(location).ToString("MMMM d, yyyy 'at' h:mm tt")
+                    : DateTime.Now.ToString("MMMM d, yyyy 'at' h:mm tt");
+
+                return new AboutInfo
+                {
+                    Version = version,
+                    BuildTime = buildTime
+                };
+            }
+            catch
+            {
+                return new AboutInfo
+                {
+                    Version = "",
+                    BuildTime = DateTime.Now.ToString("MMMM d, yyyy 'at' h:mm tt")
+                };
             }
         }
 
