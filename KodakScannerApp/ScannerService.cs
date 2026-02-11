@@ -11,7 +11,7 @@ namespace KodakScannerApp
     {
         private readonly object _lock = new object();
         private readonly string _outputRoot;
-        private readonly WiaScanner _scanner;
+        private readonly TwainScanner _scanner;
         private readonly List<PageItem> _pages;
         private ScanStatus _status;
         private bool _scanInProgress;
@@ -25,7 +25,7 @@ namespace KodakScannerApp
         {
             _outputRoot = outputRoot;
             Logger.Initialize(outputRoot);
-            _scanner = new WiaScanner();
+            _scanner = new TwainScanner();
             _pages = new List<PageItem>();
             _status = new ScanStatus { State = "idle", Message = "Ready", PagesScanned = 0, Pages = new List<PageItem>() };
             _mode = "idle";
