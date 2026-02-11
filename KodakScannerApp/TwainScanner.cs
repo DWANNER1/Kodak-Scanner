@@ -6,7 +6,6 @@ using System.Threading;
 using NTwain;
 using NTwain.Data;
 using NTwain.Internals;
-using System.Linq;
 
 namespace KodakScannerApp
 {
@@ -151,39 +150,63 @@ namespace KodakScannerApp
 
             var dpi = settings.Dpi > 0 ? settings.Dpi : 300;
 
-            TrySet(source.Capabilities.ICapXResolution, dpi);
-            TrySet(source.Capabilities.ICapYResolution, dpi);
+            SetFix32(source.Capabilities.ICapXResolution, dpi);
+            SetFix32(source.Capabilities.ICapYResolution, dpi);
 
             var pixel = MapPixelType(settings.ColorMode);
-            if (source.Capabilities.ICapPixelType.CanSet &&
-                source.Capabilities.ICapPixelType.GetValues().Contains(pixel))
+            TrySetPixel(source.Capabilities.ICapPixelType, pixel);
+
+            TrySetBool(source.Capabilities.CapFeederEnabled, BoolType.True);
+
+            if (settings.Duplex)
             {
-                source.Capabilities.ICapPixelType.SetValue(pixel);
+                TrySetBool(source.Capabilities.CapDuplexEnabled, BoolType.True);
             }
 
-            if (source.Capabilities.CapFeederEnabled.CanSet)
+            if (settings.MaxPages > 0)
             {
-                source.Capabilities.CapFeederEnabled.SetValue(true);
-            }
-
-            if (settings.Duplex && source.Capabilities.CapDuplexEnabled.CanSet)
-            {
-                source.Capabilities.CapDuplexEnabled.SetValue(true);
-            }
-
-            if (settings.MaxPages > 0 && source.Capabilities.CapXferCount.CanSet)
-            {
-                source.Capabilities.CapXferCount.SetValue((short)settings.MaxPages);
+                TrySetCount(source.Capabilities.CapXferCount, settings.MaxPages);
             }
         }
 
-        private static void TrySet(OneValueCapability<float> capability, float value)
+        private static void SetFix32(ICapWrapper<TWFix32> capability, int value)
         {
             if (capability == null) return;
-            if (capability.CanSet && capability.GetValues().Contains(value))
+            try
+            {
+                capability.SetValue(new TWFix32(value));
+            }
+            catch { }
+        }
+
+        private static void TrySetPixel(ICapWrapper<PixelType> capability, PixelType value)
+        {
+            if (capability == null) return;
+            try
             {
                 capability.SetValue(value);
             }
+            catch { }
+        }
+
+        private static void TrySetBool(ICapWrapper<BoolType> capability, BoolType value)
+        {
+            if (capability == null) return;
+            try
+            {
+                capability.SetValue(value);
+            }
+            catch { }
+        }
+
+        private static void TrySetCount(ICapWrapper<int> capability, int value)
+        {
+            if (capability == null) return;
+            try
+            {
+                capability.SetValue(value);
+            }
+            catch { }
         }
 
         private static PixelType MapPixelType(string mode)
