@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using PdfiumViewer;
@@ -25,9 +26,12 @@ namespace KodakScannerApp
                 {
                     using (var image = document.Render(pageIndex, dpi, dpi, true))
                     {
-                        image.SetResolution(dpi, dpi);
                         var filePath = Path.Combine(outputDir, "page_" + (pageIndex + 1).ToString("000") + ".png");
-                        image.Save(filePath, ImageFormat.Png);
+                        using (var bmp = new Bitmap(image))
+                        {
+                            bmp.SetResolution(dpi, dpi);
+                            bmp.Save(filePath, ImageFormat.Png);
+                        }
                         output.Add(filePath);
                     }
                 }
