@@ -157,7 +157,7 @@ namespace KodakScannerApp
                 {
                     using (var parameters = new EncoderParameters(1))
                     {
-                        parameters.Param[0] = new EncoderParameter(Encoder.Quality, 95L);
+                        parameters.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, (byte)95);
                         bmp.Save(ms, encoder, parameters);
                     }
                 }
