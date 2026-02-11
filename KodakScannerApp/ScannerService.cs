@@ -170,7 +170,13 @@ namespace KodakScannerApp
                 var targetDir = ResolveActiveJobDir();
                 var dpi = GuessTargetDpi();
                 var filePath = DividerPageBuilder.CreateDividerPage(text, targetDir, dpi);
-                var page = new PageItem { Id = Guid.NewGuid().ToString("N"), Path = filePath };
+                var page = new PageItem
+                {
+                    Id = Guid.NewGuid().ToString("N"),
+                    Path = filePath,
+                    WidthPt = 8.5 * 72.0,
+                    HeightPt = 11.0 * 72.0
+                };
 
                 lock (_lock)
                 {
@@ -208,8 +214,8 @@ namespace KodakScannerApp
             try
             {
                 var jobDir = Path.Combine(_outputRoot, "edit_" + DateTime.Now.ToString("yyyyMMdd_HHmmss"));
-                var files = PdfImporter.RenderPdfToImages(pdfPath, jobDir);
-                if (files.Count == 0)
+                var pages = PdfImporter.RenderPdfToImages(pdfPath, jobDir);
+                if (pages.Count == 0)
                 {
                     return new ApiResult { Ok = false, Message = "No pages found in PDF" };
                 }
@@ -217,10 +223,7 @@ namespace KodakScannerApp
                 lock (_lock)
                 {
                     _pages.Clear();
-                    foreach (var file in files)
-                    {
-                        _pages.Add(new PageItem { Id = Guid.NewGuid().ToString("N"), Path = file });
-                    }
+                    _pages.AddRange(pages);
                     _lastJobDir = jobDir;
                     _status.State = "ready";
                     _status.Message = "PDF loaded";
@@ -309,7 +312,7 @@ namespace KodakScannerApp
                 }
                 else
                 {
-                    PdfWriter.WritePdfFromImages(files, outputFile);
+                    PdfWriter.WritePdfFromPages(new List<PageItem>(_pages), outputFile);
                 }
                 return new ApiResult { Ok = true, Message = "Saved PDF", Files = new List<string> { outputFile } };
             }

@@ -17,7 +17,22 @@ namespace KodakScannerApp
                 throw new InvalidOperationException("No images to export");
             }
 
-            var totalObjects = 2 + (imageFiles.Count * 3);
+            var pages = new List<PageItem>();
+            foreach (var file in imageFiles)
+            {
+                pages.Add(new PageItem { Path = file });
+            }
+            WritePdfFromPages(pages, outputFile);
+        }
+
+        public static void WritePdfFromPages(List<PageItem> pages, string outputFile)
+        {
+            if (pages == null || pages.Count == 0)
+            {
+                throw new InvalidOperationException("No images to export");
+            }
+
+            var totalObjects = 2 + (pages.Count * 3);
             var xrefPositions = new List<long>(totalObjects + 1);
 
             using (var fs = new FileStream(outputFile, FileMode.Create, FileAccess.Write))
@@ -27,17 +42,18 @@ namespace KodakScannerApp
                 xrefPositions.Add(0);
 
                 WriteCatalog(writer, xrefPositions, 1, 2);
-                WritePagesRoot(writer, xrefPositions, 2, imageFiles.Count);
+                WritePagesRoot(writer, xrefPositions, 2, pages.Count);
 
-                for (int i = 0; i < imageFiles.Count; i++)
+                for (int i = 0; i < pages.Count; i++)
                 {
                     int pageId = 3 + (i * 3);
                     int contentId = pageId + 1;
                     int imageId = pageId + 2;
 
-                    WritePage(writer, xrefPositions, pageId, 2, contentId, imageId, imageFiles[i]);
-                    WritePageContent(writer, xrefPositions, contentId, imageId, imageFiles[i]);
-                    WriteImageObject(writer, xrefPositions, imageId, imageFiles[i]);
+                    var page = pages[i];
+                    WritePage(writer, xrefPositions, pageId, 2, contentId, imageId, page);
+                    WritePageContent(writer, xrefPositions, contentId, imageId, page);
+                    WriteImageObject(writer, xrefPositions, imageId, page.Path);
                 }
 
                 var xrefStart = writer.BaseStream.Position;
@@ -83,9 +99,9 @@ namespace KodakScannerApp
             writer.Write(Encoding.ASCII.GetBytes("endobj\n"));
         }
 
-        private static void WritePage(BinaryWriter writer, List<long> xref, int pageId, int pagesId, int contentId, int imageId, string imageFile)
+        private static void WritePage(BinaryWriter writer, List<long> xref, int pageId, int pagesId, int contentId, int imageId, PageItem page)
         {
-            var size = GetPageSize(imageFile);
+            var size = GetPageSize(page);
 
             xref.Add(writer.BaseStream.Position);
             writer.Write(Encoding.ASCII.GetBytes(pageId + " 0 obj\n"));
@@ -96,9 +112,9 @@ namespace KodakScannerApp
             writer.Write(Encoding.ASCII.GetBytes("endobj\n"));
         }
 
-        private static void WritePageContent(BinaryWriter writer, List<long> xref, int contentId, int imageId, string imageFile)
+        private static void WritePageContent(BinaryWriter writer, List<long> xref, int contentId, int imageId, PageItem page)
         {
-            var size = GetPageSize(imageFile);
+            var size = GetPageSize(page);
             var content = "q\n" + size.WidthPt + " 0 0 " + size.HeightPt + " 0 0 cm\n/Im1 Do\nQ\n";
             var bytes = Encoding.ASCII.GetBytes(content);
 
@@ -157,8 +173,18 @@ namespace KodakScannerApp
             }
         }
 
-        private static PageSize GetPageSize(string imageFile)
+        private static PageSize GetPageSize(PageItem page)
         {
+            if (page != null && page.WidthPt > 0 && page.HeightPt > 0)
+            {
+                return new PageSize
+                {
+                    WidthPt = page.WidthPt.ToString("0.###", CultureInfo.InvariantCulture),
+                    HeightPt = page.HeightPt.ToString("0.###", CultureInfo.InvariantCulture)
+                };
+            }
+
+            var imageFile = page?.Path ?? "";
             using (var image = Image.FromFile(imageFile))
             {
                 var dpiX = image.HorizontalResolution;

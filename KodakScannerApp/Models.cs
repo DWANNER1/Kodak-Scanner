@@ -57,6 +57,8 @@ namespace KodakScannerApp
     {
         public string Id { get; set; }
         public string Path { get; set; }
+        public double WidthPt { get; set; }
+        public double HeightPt { get; set; }
     }
 
     public class ApiResult

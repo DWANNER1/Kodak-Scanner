@@ -9,7 +9,7 @@ namespace KodakScannerApp
 {
     public static class PdfImporter
     {
-        public static List<string> RenderPdfToImages(string pdfPath, string outputDir)
+        public static List<PageItem> RenderPdfToImages(string pdfPath, string outputDir)
         {
             if (string.IsNullOrWhiteSpace(pdfPath) || !File.Exists(pdfPath))
             {
@@ -17,7 +17,7 @@ namespace KodakScannerApp
             }
 
             Directory.CreateDirectory(outputDir);
-            var output = new List<string>();
+            var output = new List<PageItem>();
 
             using (var document = PdfDocument.Load(pdfPath))
             {
@@ -33,7 +33,14 @@ namespace KodakScannerApp
                             bmp.SetResolution(dpi, dpi);
                             bmp.Save(filePath, ImageFormat.Jpeg);
                         }
-                        output.Add(filePath);
+                        var pageSize = document.PageSizes[pageIndex];
+                        output.Add(new PageItem
+                        {
+                            Id = Guid.NewGuid().ToString("N"),
+                            Path = filePath,
+                            WidthPt = pageSize.Width,
+                            HeightPt = pageSize.Height
+                        });
                     }
                 }
             }
