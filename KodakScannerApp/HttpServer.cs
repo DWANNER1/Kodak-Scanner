@@ -263,6 +263,14 @@ namespace KodakScannerApp
                     return;
                 }
 
+                if (path.Equals("api/savepdf", StringComparison.OrdinalIgnoreCase))
+                {
+                    var suggested = context.Request.QueryString["name"] ?? "";
+                    var picked = FilePicker.SavePdf(suggested);
+                    WriteJson(context, new { Path = picked ?? "" });
+                    return;
+                }
+
                 context.Response.StatusCode = 404;
                 context.Response.Close();
             }

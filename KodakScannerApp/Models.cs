@@ -74,6 +74,8 @@ namespace KodakScannerApp
         public List<PageItem> Pages { get; set; }
         public string OutputRoot { get; set; }
         public string CurrentJobDir { get; set; }
+        public string Mode { get; set; }
+        public string EditSourcePath { get; set; }
     }
 
     public class AboutInfo

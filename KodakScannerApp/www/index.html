@@ -139,10 +139,19 @@
             </div>
             <div class="inline-actions">
               <button id="openPdfBtn" class="ghost" type="button">Open PDF</button>
-              <button id="editHeaderBtn" class="ghost" type="button">Header Page</button>
             </div>
           </div>
           <p class="muted">Load a PDF, reorder pages, and insert divider pages before exporting.</p>
+          <div id="editMeta" class="edit-meta">
+            <div class="edit-path">
+              <span class="label">Source</span>
+              <span id="editPath" class="value">None loaded</span>
+            </div>
+            <div class="inline-actions">
+              <button id="exportOverwriteBtn" class="primary" type="button">Export (Overwrite)</button>
+              <button id="exportSaveAsBtn" class="ghost" type="button">Save As</button>
+            </div>
+          </div>
         </section>
 
         <section class="card">
@@ -151,6 +160,7 @@
               <h2>Document Pages</h2>
               <span class="chip">Edit</span>
             </div>
+            <button id="editHeaderBtn" class="ghost" type="button">Header Page</button>
           </div>
           <ul id="editFiles" class="file-list"></ul>
         </section>

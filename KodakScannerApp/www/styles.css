@@ -508,6 +508,41 @@ button.ghost:hover {
   gap: 10px;
 }
 
+.edit-meta {
+  margin-top: 16px;
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #f6f7fb;
+  border: 1px solid #e4e8f2;
+}
+
+.edit-meta.show {
+  display: flex;
+}
+
+.edit-path {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.edit-path .label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.edit-path .value {
+  font-size: 13px;
+  color: #2f3a52;
+  word-break: break-all;
+}
+
 @media (max-width: 1200px) {
   .file-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));

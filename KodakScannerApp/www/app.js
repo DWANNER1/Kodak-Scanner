@@ -39,12 +39,18 @@
   var headerBtn = document.getElementById("headerBtn");
   var editHeaderBtn = document.getElementById("editHeaderBtn");
   var openPdfBtn = document.getElementById("openPdfBtn");
+  var exportOverwriteBtn = document.getElementById("exportOverwriteBtn");
+  var exportSaveAsBtn = document.getElementById("exportSaveAsBtn");
+  var editMeta = document.getElementById("editMeta");
+  var editPath = document.getElementById("editPath");
   var headerModal = document.getElementById("headerModal");
   var headerText = document.getElementById("headerText");
   var headerBuild = document.getElementById("headerBuild");
   var headerCancel = document.getElementById("headerCancel");
   var aboutBuild = document.getElementById("aboutBuild");
   var aboutVersion = document.getElementById("aboutVersion");
+  var lastMode = "";
+  var lastEditPath = "";
 
   function logEvent(label, data) {
     if (!debugEl) return;
@@ -167,9 +173,28 @@
         var nextKey = status.Pages.map(function (p) { return p.Id + ":" + p.Path; }).join("|");
         lastFilesKey = nextKey;
         renderPageList(filesEl, status.Pages, true);
-        renderPageList(editFilesEl, status.Pages, false);
+        lastMode = status.Mode || "";
+        lastEditPath = status.EditSourcePath || "";
+        if (lastMode === "edit") {
+          renderPageList(editFilesEl, status.Pages, false);
+        } else if (editFilesEl) {
+          editFilesEl.innerHTML = "";
+          editFilesEl.dataset.count = "0";
+        }
+        updateEditMeta();
       }
     });
+  }
+
+  function updateEditMeta() {
+    if (!editMeta || !editPath) return;
+    if (lastMode === "edit" && lastEditPath) {
+      editMeta.classList.add("show");
+      editPath.textContent = lastEditPath;
+    } else {
+      editMeta.classList.remove("show");
+      editPath.textContent = "None loaded";
+    }
   }
 
   function renderPageList(listEl, pages, scrollToBottom) {
@@ -429,6 +454,11 @@
       if (!li || !li.dataset.id) return;
       e.preventDefault();
       e.dataTransfer.dropEffect = "move";
+      if (e.clientY > window.innerHeight - 80) {
+        window.scrollBy(0, 20);
+      } else if (e.clientY < 80) {
+        window.scrollBy(0, -20);
+      }
     });
 
     listEl.addEventListener("drop", function (e) {
@@ -662,6 +692,35 @@
           }
           refreshStatus();
         });
+      });
+    });
+  }
+
+  if (exportOverwriteBtn) {
+    exportOverwriteBtn.addEventListener("click", function () {
+      if (!lastEditPath) return;
+      var dir = lastEditPath.replace(/\\[^\\]+$/, "");
+      var base = lastEditPath.replace(/^.*[\\\/]/, "").replace(/\.pdf$/i, "");
+      document.getElementById("outputPath").value = dir;
+      document.getElementById("baseName").value = base;
+      document.getElementById("format").value = "pdf";
+      handleExport(false);
+    });
+  }
+
+  if (exportSaveAsBtn) {
+    exportSaveAsBtn.addEventListener("click", function () {
+      var base = lastEditPath ? lastEditPath.replace(/^.*[\\\/]/, "").replace(/\.pdf$/i, "") : "scan";
+      apiGet("/api/savepdf?name=" + encodeURIComponent(base)).then(function (res) {
+        if (!res || !res.Path) {
+          return;
+        }
+        var dir = res.Path.replace(/\\[^\\]+$/, "");
+        var baseName = res.Path.replace(/^.*[\\\/]/, "").replace(/\.pdf$/i, "");
+        document.getElementById("outputPath").value = dir;
+        document.getElementById("baseName").value = baseName;
+        document.getElementById("format").value = "pdf";
+        handleExport(false);
       });
     });
   }

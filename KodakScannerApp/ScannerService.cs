@@ -15,6 +15,8 @@ namespace KodakScannerApp
         private ScanStatus _status;
         private bool _scanInProgress;
         private string _lastJobDir;
+        private string _mode;
+        private string _editSourcePath;
 
         public string OutputRoot => _outputRoot;
 
@@ -25,6 +27,8 @@ namespace KodakScannerApp
             _scanner = new WiaScanner();
             _pages = new List<PageItem>();
             _status = new ScanStatus { State = "idle", Message = "Ready", PagesScanned = 0, Pages = new List<PageItem>() };
+            _mode = "idle";
+            _editSourcePath = "";
         }
 
         public List<DeviceInfoDto> ListDevices()
@@ -43,7 +47,9 @@ namespace KodakScannerApp
                     PagesScanned = _status.PagesScanned,
                     Pages = new List<PageItem>(_pages),
                     OutputRoot = _outputRoot,
-                    CurrentJobDir = _lastJobDir
+                    CurrentJobDir = _lastJobDir,
+                    Mode = _mode,
+                    EditSourcePath = _editSourcePath
                 };
             }
         }
@@ -89,6 +95,8 @@ namespace KodakScannerApp
                 _scanInProgress = true;
                 _status.State = "scanning";
                 _status.Message = "Scanning...";
+                _mode = "scan";
+                _editSourcePath = "";
             }
 
             var thread = new System.Threading.Thread(() =>
@@ -215,6 +223,8 @@ namespace KodakScannerApp
                     _status.State = "ready";
                     _status.Message = "PDF loaded";
                     _status.PagesScanned = _pages.Count;
+                    _mode = "edit";
+                    _editSourcePath = pdfPath;
                 }
 
                 Logger.Log("pdf loaded " + pdfPath);
@@ -351,6 +361,8 @@ namespace KodakScannerApp
                 _status.State = "idle";
                 _status.Message = "Ready";
                 _status.PagesScanned = 0;
+                _mode = "idle";
+                _editSourcePath = "";
             }
         }
 
