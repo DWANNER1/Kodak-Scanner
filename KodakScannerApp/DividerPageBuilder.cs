@@ -8,7 +8,7 @@ namespace KodakScannerApp
 {
     public static class DividerPageBuilder
     {
-        public static string CreateDividerPage(string text, string outputDir)
+        public static string CreateDividerPage(string text, string outputDir, int dpi)
         {
             if (string.IsNullOrWhiteSpace(text))
             {
@@ -17,7 +17,7 @@ namespace KodakScannerApp
 
             Directory.CreateDirectory(outputDir);
 
-            var dpi = 300;
+            if (dpi <= 0) dpi = 300;
             var width = (int)Math.Round(8.5 * dpi);
             var height = (int)Math.Round(11.0 * dpi);
             var filePath = Path.Combine(outputDir, "header_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".png");

@@ -25,6 +25,7 @@ namespace KodakScannerApp
                 {
                     using (var image = document.Render(pageIndex, dpi, dpi, true))
                     {
+                        image.SetResolution(dpi, dpi);
                         var filePath = Path.Combine(outputDir, "page_" + (pageIndex + 1).ToString("000") + ".png");
                         image.Save(filePath, ImageFormat.Png);
                         output.Add(filePath);

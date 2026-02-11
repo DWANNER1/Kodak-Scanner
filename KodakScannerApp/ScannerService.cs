@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using System.Reflection;
+using System.Drawing;
 
 namespace KodakScannerApp
 {
@@ -167,7 +168,8 @@ namespace KodakScannerApp
             try
             {
                 var targetDir = ResolveActiveJobDir();
-                var filePath = DividerPageBuilder.CreateDividerPage(text, targetDir);
+                var dpi = GuessTargetDpi();
+                var filePath = DividerPageBuilder.CreateDividerPage(text, targetDir, dpi);
                 var page = new PageItem { Id = Guid.NewGuid().ToString("N"), Path = filePath };
 
                 lock (_lock)
@@ -595,6 +597,27 @@ namespace KodakScannerApp
             _lastJobDir = jobDir;
             Directory.CreateDirectory(jobDir);
             return jobDir;
+        }
+
+        private int GuessTargetDpi()
+        {
+            try
+            {
+                if (_pages.Count > 0)
+                {
+                    var first = _pages[0];
+                    if (File.Exists(first.Path))
+                    {
+                        using (var image = System.Drawing.Image.FromFile(first.Path))
+                        {
+                            var dpi = (int)Math.Round(image.HorizontalResolution);
+                            if (dpi >= 72) return dpi;
+                        }
+                    }
+                }
+            }
+            catch { }
+            return 300;
         }
 
         private static System.Drawing.Imaging.ImageFormat GetImageFormat(string ext)
