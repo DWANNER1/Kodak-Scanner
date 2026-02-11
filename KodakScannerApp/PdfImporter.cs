@@ -26,22 +26,31 @@ namespace KodakScannerApp
                 {
                     using (var image = document.Render(pageIndex, dpi, dpi, true))
                     {
-                        var filePath = Path.Combine(outputDir, "page_" + (pageIndex + 1).ToString("000") + ".jpg");
+                        var baseName = "page_" + (pageIndex + 1).ToString("000");
+                        var filePath = Path.Combine(outputDir, baseName + ".jpg");
                         using (var bmp = new Bitmap(image))
                         {
                             bmp.SetResolution(dpi, dpi);
-                            var encoder = GetJpegEncoder();
-                            if (encoder != null)
+                            try
                             {
-                                using (var parameters = new EncoderParameters(1))
+                                var encoder = GetJpegEncoder();
+                                if (encoder != null)
                                 {
-                                    parameters.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, (byte)95);
-                                    bmp.Save(filePath, encoder, parameters);
+                                    using (var parameters = new EncoderParameters(1))
+                                    {
+                                        parameters.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, (byte)95);
+                                        bmp.Save(filePath, encoder, parameters);
+                                    }
+                                }
+                                else
+                                {
+                                    bmp.Save(filePath, ImageFormat.Jpeg);
                                 }
                             }
-                            else
+                            catch
                             {
-                                bmp.Save(filePath, ImageFormat.Jpeg);
+                                filePath = Path.Combine(outputDir, baseName + ".png");
+                                bmp.Save(filePath, ImageFormat.Png);
                             }
                         }
                         output.Add(filePath);

@@ -20,7 +20,8 @@ namespace KodakScannerApp
             if (dpi <= 0) dpi = 300;
             var width = (int)Math.Round(8.5 * dpi);
             var height = (int)Math.Round(11.0 * dpi);
-            var filePath = Path.Combine(outputDir, "header_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".jpg");
+            var baseName = "header_" + DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            var filePath = Path.Combine(outputDir, baseName + ".jpg");
 
             using (var bmp = new Bitmap(width, height))
             {
@@ -66,18 +67,26 @@ namespace KodakScannerApp
                     }
                 }
 
-                var encoder = GetJpegEncoder();
-                if (encoder != null)
+                try
                 {
-                    using (var parameters = new EncoderParameters(1))
+                    var encoder = GetJpegEncoder();
+                    if (encoder != null)
                     {
-                        parameters.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, (byte)95);
-                        bmp.Save(filePath, encoder, parameters);
+                        using (var parameters = new EncoderParameters(1))
+                        {
+                            parameters.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, (byte)95);
+                            bmp.Save(filePath, encoder, parameters);
+                        }
+                    }
+                    else
+                    {
+                        bmp.Save(filePath, ImageFormat.Jpeg);
                     }
                 }
-                else
+                catch
                 {
-                    bmp.Save(filePath, ImageFormat.Jpeg);
+                    filePath = Path.Combine(outputDir, baseName + ".png");
+                    bmp.Save(filePath, ImageFormat.Png);
                 }
             }
 

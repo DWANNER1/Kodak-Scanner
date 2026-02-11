@@ -185,7 +185,7 @@ namespace KodakScannerApp
             }
             catch (Exception ex)
             {
-                Logger.Log("header page error " + ex.Message);
+                Logger.Log("header page error " + ex);
                 return new ApiResult { Ok = false, Message = ex.Message };
             }
         }
@@ -234,7 +234,7 @@ namespace KodakScannerApp
             }
             catch (Exception ex)
             {
-                Logger.Log("pdf load error " + ex.Message);
+                Logger.Log("pdf load error " + ex);
                 return new ApiResult { Ok = false, Message = ex.Message };
             }
         }
