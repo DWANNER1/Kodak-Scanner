@@ -140,6 +140,92 @@ namespace KodakScannerApp
             return new ApiResult { Ok = true, Message = "Scan started" };
         }
 
+        public ApiResult AddHeaderPage(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return new ApiResult { Ok = false, Message = "Header text is required" };
+            }
+
+            lock (_lock)
+            {
+                if (_scanInProgress)
+                {
+                    return new ApiResult { Ok = false, Message = "Cannot add header while scanning" };
+                }
+            }
+
+            try
+            {
+                var targetDir = ResolveActiveJobDir();
+                var filePath = DividerPageBuilder.CreateDividerPage(text, targetDir);
+                var page = new PageItem { Id = Guid.NewGuid().ToString("N"), Path = filePath };
+
+                lock (_lock)
+                {
+                    _pages.Insert(0, page);
+                    _status.State = "ready";
+                    _status.Message = "Header page added";
+                    _status.PagesScanned = _pages.Count;
+                }
+
+                Logger.Log("header page created " + filePath);
+                return new ApiResult { Ok = true, Message = "Header page created" };
+            }
+            catch (Exception ex)
+            {
+                Logger.Log("header page error " + ex.Message);
+                return new ApiResult { Ok = false, Message = ex.Message };
+            }
+        }
+
+        public ApiResult LoadPdf(string pdfPath)
+        {
+            if (string.IsNullOrWhiteSpace(pdfPath))
+            {
+                return new ApiResult { Ok = false, Message = "Missing PDF path" };
+            }
+
+            lock (_lock)
+            {
+                if (_scanInProgress)
+                {
+                    return new ApiResult { Ok = false, Message = "Cannot load PDF while scanning" };
+                }
+            }
+
+            try
+            {
+                var jobDir = Path.Combine(_outputRoot, "edit_" + DateTime.Now.ToString("yyyyMMdd_HHmmss"));
+                var files = PdfImporter.RenderPdfToImages(pdfPath, jobDir);
+                if (files.Count == 0)
+                {
+                    return new ApiResult { Ok = false, Message = "No pages found in PDF" };
+                }
+
+                lock (_lock)
+                {
+                    _pages.Clear();
+                    foreach (var file in files)
+                    {
+                        _pages.Add(new PageItem { Id = Guid.NewGuid().ToString("N"), Path = file });
+                    }
+                    _lastJobDir = jobDir;
+                    _status.State = "ready";
+                    _status.Message = "PDF loaded";
+                    _status.PagesScanned = _pages.Count;
+                }
+
+                Logger.Log("pdf loaded " + pdfPath);
+                return new ApiResult { Ok = true, Message = "PDF loaded" };
+            }
+            catch (Exception ex)
+            {
+                Logger.Log("pdf load error " + ex.Message);
+                return new ApiResult { Ok = false, Message = ex.Message };
+            }
+        }
+
         public ApiResult Export(ExportRequest request)
         {
             if (request == null)
@@ -446,6 +532,29 @@ namespace KodakScannerApp
             {
                 return false;
             }
+        }
+
+        private string ResolveActiveJobDir()
+        {
+            if (_pages.Count > 0)
+            {
+                var first = _pages[0];
+                var folder = Path.GetDirectoryName(first.Path);
+                if (!string.IsNullOrWhiteSpace(folder))
+                {
+                    return folder;
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(_lastJobDir))
+            {
+                return _lastJobDir;
+            }
+
+            var jobDir = Path.Combine(_outputRoot, DateTime.Now.ToString("yyyyMMdd_HHmmss"));
+            _lastJobDir = jobDir;
+            Directory.CreateDirectory(jobDir);
+            return jobDir;
         }
 
         private static System.Drawing.Imaging.ImageFormat GetImageFormat(string ext)

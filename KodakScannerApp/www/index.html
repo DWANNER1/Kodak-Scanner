@@ -25,7 +25,7 @@
       <nav class="nav">
         <button class="nav-item active" type="button" data-tab="scanner">Scanner</button>
         <button class="nav-item" type="button" data-tab="output">Output</button>
-        <button class="nav-item" type="button" data-tab="automation">Automation</button>
+        <button class="nav-item" type="button" data-tab="automation">Edit Document</button>
         <button class="nav-item" type="button" data-tab="maintenance">Maintenance</button>
         <button class="nav-item" type="button" data-tab="about">About</button>
       </nav>
@@ -120,17 +120,39 @@
 
         <section class="card">
           <div class="card-head">
-            <h2>Scanned Pages</h2>
-            <span class="chip">Queue</span>
+            <div class="card-title">
+              <h2>Scanned Pages</h2>
+              <span class="chip">Queue</span>
+            </div>
+            <button id="headerBtn" class="ghost" type="button">Header Page</button>
           </div>
           <ul id="files" class="file-list"></ul>
         </section>
       </section>
 
       <section class="tab-section" data-section="automation">
-        <section class="card placeholder">
-          <h2>Automation</h2>
-          <p>Create scan presets and auto-export rules for frequent jobs.</p>
+        <section class="card">
+          <div class="card-head">
+            <div class="card-title">
+              <h2>Edit Existing Document</h2>
+              <span class="chip">PDF</span>
+            </div>
+            <div class="inline-actions">
+              <button id="openPdfBtn" class="ghost" type="button">Open PDF</button>
+              <button id="editHeaderBtn" class="ghost" type="button">Header Page</button>
+            </div>
+          </div>
+          <p class="muted">Load a PDF, reorder pages, and insert divider pages before exporting.</p>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <div class="card-title">
+              <h2>Document Pages</h2>
+              <span class="chip">Edit</span>
+            </div>
+          </div>
+          <ul id="editFiles" class="file-list"></ul>
         </section>
       </section>
 
@@ -172,6 +194,22 @@
         </section>
       </section>
     </main>
+  </div>
+
+  <div id="headerModal" class="modal" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="headerModalTitle">
+      <div class="modal-head">
+        <h2 id="headerModalTitle">New Header Page</h2>
+        <p>Enter the divider text for the new page.</p>
+      </div>
+      <div class="modal-body">
+        <textarea id="headerText" rows="4" placeholder="Divider title"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button id="headerCancel" class="ghost" type="button">Cancel</button>
+        <button id="headerBuild" class="primary" type="button" style="display: none;">Build</button>
+      </div>
+    </div>
   </div>
 
   <script src="app.js"></script>

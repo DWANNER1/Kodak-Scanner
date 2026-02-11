@@ -18,6 +18,7 @@
   var deviceSelect = document.getElementById("deviceSelect");
   var statusEl = document.getElementById("status");
   var filesEl = document.getElementById("files");
+  var editFilesEl = document.getElementById("editFiles");
   var navItems = document.querySelectorAll(".nav-item");
   var tabSections = document.querySelectorAll(".tab-section");
   var lastDevices = [];
@@ -29,10 +30,19 @@
   var lastFilesKey = "";
   var isDragging = false;
   var dragPath = "";
+  var dragSourceList = null;
+  var dragStartedAt = 0;
   var debugEl = document.getElementById("debugLog");
   var serverLogEl = document.getElementById("serverLog");
   var serverLogBtn = document.getElementById("refreshServerLog");
   var lastLogSignature = "";
+  var headerBtn = document.getElementById("headerBtn");
+  var editHeaderBtn = document.getElementById("editHeaderBtn");
+  var openPdfBtn = document.getElementById("openPdfBtn");
+  var headerModal = document.getElementById("headerModal");
+  var headerText = document.getElementById("headerText");
+  var headerBuild = document.getElementById("headerBuild");
+  var headerCancel = document.getElementById("headerCancel");
 
   function logEvent(label, data) {
     if (!debugEl) return;
@@ -127,10 +137,13 @@
 
       setStatus(state, message, tone);
       if (status.Pages) {
-        if (isDragging) {
+        if (isDragging && Date.now() - dragStartedAt < 5000) {
           logEvent("skip refresh (dragging)");
           return;
         }
+        isDragging = false;
+        dragPath = "";
+        dragSourceList = null;
         logEvent("status.pages", { count: status.Pages.length });
         logEvent("page.order", status.Pages.map(function (p, i) {
           var name = p.Path ? p.Path.replace(/^.*[\\\/]/, "") : "";
@@ -138,138 +151,149 @@
         }));
         var nextKey = status.Pages.map(function (p) { return p.Id + ":" + p.Path; }).join("|");
         lastFilesKey = nextKey;
-        filesEl.innerHTML = "";
-        var previousCount = parseInt(filesEl.dataset.count || "0", 10);
-        filesEl.dataset.count = status.Pages.length.toString();
-        status.Pages.forEach(function (page, index) {
-          var filePath = page.Path;
-          var li = document.createElement("li");
-          var img = document.createElement("img");
-          img.className = "file-thumb";
-          img.alt = "Scanned page preview";
-
-          var actions = document.createElement("div");
-          actions.className = "file-actions";
-
-          var ball = document.createElement("div");
-          ball.className = "page-ball";
-          ball.textContent = (index + 1).toString();
-          ball.setAttribute("draggable", "true");
-          ball.dataset.id = page.Id;
-
-          var zoomOut = buildIconButton("Zoom out", "zoom_out");
-          var zoomIn = buildIconButton("Zoom in", "zoom_in");
-          var rotateLeft = buildIconButton("Rotate left", "rotate_left");
-          var rotateRight = buildIconButton("Rotate right", "rotate_right");
-          var del = buildIconButton("Delete", "trash");
-          del.classList.add("danger");
-
-          var rel = toRelativeScanPath(filePath, lastOutputRoot);
-          if (rel) {
-            img.dataset.baseSrc = "/scans/" + rel;
-            var v = imageVersion[filePath] || "";
-            img.src = img.dataset.baseSrc + (v ? "?v=" + v : "");
-          }
-
-          img.dataset.scale = "1";
-          img.style.transformOrigin = "center center";
-          img.style.transition = "transform 0.15s ease";
-
-          var wrap = document.createElement("div");
-          wrap.className = "file-thumb-wrap";
-          wrap.appendChild(img);
-          enableDragScroll(wrap);
-
-          var scale = zoomState[filePath] || 1;
-          img.dataset.scale = scale.toString();
-          img.style.transform = "scale(" + scale + ")";
-          if (scale > 1) {
-            wrap.classList.add("zoomed");
-          }
-          zoomIn.addEventListener("click", function () {
-            var next = Math.min(3, parseFloat(img.dataset.scale || "1") + 0.25);
-            img.dataset.scale = next.toString();
-            img.style.transform = "scale(" + next + ")";
-            zoomState[filePath] = next;
-            wrap.classList.toggle("zoomed", next > 1);
-          });
-          zoomOut.addEventListener("click", function () {
-            var next = Math.max(0.5, parseFloat(img.dataset.scale || "1") - 0.25);
-            img.dataset.scale = next.toString();
-            img.style.transform = "scale(" + next + ")";
-            zoomState[filePath] = next;
-            wrap.classList.toggle("zoomed", next > 1);
-          });
-          rotateLeft.addEventListener("click", function () {
-            rotateFile(filePath, "left", img);
-          });
-          rotateRight.addEventListener("click", function () {
-            rotateFile(filePath, "right", img);
-          });
-          del.addEventListener("click", function () {
-            if (!confirm("Delete this scan?")) return;
-            logEvent("delete click", { id: page.Id, path: filePath });
-            apiPost("/api/delete", { Id: page.Id }).then(function (res) {
-              logEvent("delete result", res);
-              if (!res.Ok) {
-                alert(res.Message || "Delete failed");
-                return;
-              }
-              delete zoomState[filePath];
-              delete imageVersion[filePath];
-              delete scrollState[filePath];
-              lastFilesKey = "";
-              refreshStatus();
-            });
-          });
-
-          actions.appendChild(ball);
-          actions.appendChild(zoomOut);
-          actions.appendChild(zoomIn);
-          actions.appendChild(rotateLeft);
-          actions.appendChild(rotateRight);
-          actions.appendChild(del);
-
-          var savedScroll = scrollState[filePath];
-          if (savedScroll) {
-            wrap.scrollLeft = savedScroll.left;
-            wrap.scrollTop = savedScroll.top;
-          }
-
-          wrap.addEventListener("scroll", function () {
-            scrollState[filePath] = { left: wrap.scrollLeft, top: wrap.scrollTop };
-          });
-
-          li.dataset.id = page.Id;
-          li.draggable = false;
-          ball.addEventListener("dragstart", function (e) {
-            isDragging = true;
-            dragPath = page.Id;
-            li.classList.add("dragging-card");
-            e.dataTransfer.effectAllowed = "move";
-            e.dataTransfer.setData("text/plain", page.Id);
-            if (e.dataTransfer.setDragImage) {
-              e.dataTransfer.setDragImage(li, li.offsetWidth / 2, 20);
-            }
-            logEvent("dragstart", { id: page.Id });
-          });
-          ball.addEventListener("dragend", function () {
-            isDragging = false;
-            dragPath = "";
-            li.classList.remove("dragging-card");
-            logEvent("dragend");
-          });
-          li.appendChild(wrap);
-          li.appendChild(actions);
-          filesEl.appendChild(li);
-        });
-        if (status.Pages.length > previousCount) {
-          setTimeout(function () {
-            window.scrollTo(0, document.body.scrollHeight);
-          }, 0);
-        }
+        renderPageList(filesEl, status.Pages, true);
+        renderPageList(editFilesEl, status.Pages, false);
       }
     });
+  }
+
+  function renderPageList(listEl, pages, scrollToBottom) {
+    if (!listEl) return;
+    listEl.innerHTML = "";
+    var previousCount = parseInt(listEl.dataset.count || "0", 10);
+    listEl.dataset.count = pages.length.toString();
+    pages.forEach(function (page, index) {
+      var filePath = page.Path;
+      var li = document.createElement("li");
+      var img = document.createElement("img");
+      img.className = "file-thumb";
+      img.alt = "Scanned page preview";
+
+      var actions = document.createElement("div");
+      actions.className = "file-actions";
+
+      var ball = document.createElement("div");
+      ball.className = "page-ball";
+      ball.textContent = (index + 1).toString();
+      ball.setAttribute("draggable", "true");
+      ball.dataset.id = page.Id;
+
+      var zoomOut = buildIconButton("Zoom out", "zoom_out");
+      var zoomIn = buildIconButton("Zoom in", "zoom_in");
+      var rotateLeft = buildIconButton("Rotate left", "rotate_left");
+      var rotateRight = buildIconButton("Rotate right", "rotate_right");
+      var del = buildIconButton("Delete", "trash");
+      del.classList.add("danger");
+
+      var rel = toRelativeScanPath(filePath, lastOutputRoot);
+      if (rel) {
+        img.dataset.baseSrc = "/scans/" + rel;
+        var v = imageVersion[filePath] || "";
+        img.src = img.dataset.baseSrc + (v ? "?v=" + v : "");
+        wireImageRetry(img, filePath);
+      }
+
+      img.dataset.scale = "1";
+      img.style.transformOrigin = "center center";
+      img.style.transition = "transform 0.15s ease";
+
+      var wrap = document.createElement("div");
+      wrap.className = "file-thumb-wrap";
+      wrap.appendChild(img);
+      enableDragScroll(wrap);
+
+      var scale = zoomState[filePath] || 1;
+      img.dataset.scale = scale.toString();
+      img.style.transform = "scale(" + scale + ")";
+      if (scale > 1) {
+        wrap.classList.add("zoomed");
+      }
+      zoomIn.addEventListener("click", function () {
+        var next = Math.min(3, parseFloat(img.dataset.scale || "1") + 0.25);
+        img.dataset.scale = next.toString();
+        img.style.transform = "scale(" + next + ")";
+        zoomState[filePath] = next;
+        wrap.classList.toggle("zoomed", next > 1);
+      });
+      zoomOut.addEventListener("click", function () {
+        var next = Math.max(0.5, parseFloat(img.dataset.scale || "1") - 0.25);
+        img.dataset.scale = next.toString();
+        img.style.transform = "scale(" + next + ")";
+        zoomState[filePath] = next;
+        wrap.classList.toggle("zoomed", next > 1);
+      });
+      rotateLeft.addEventListener("click", function () {
+        rotateFile(filePath, "left", img);
+      });
+      rotateRight.addEventListener("click", function () {
+        rotateFile(filePath, "right", img);
+      });
+      del.addEventListener("click", function () {
+        if (!confirm("Delete this scan?")) return;
+        logEvent("delete click", { id: page.Id, path: filePath });
+        apiPost("/api/delete", { Id: page.Id }).then(function (res) {
+          logEvent("delete result", res);
+          if (!res.Ok) {
+            alert(res.Message || "Delete failed");
+            return;
+          }
+          delete zoomState[filePath];
+          delete imageVersion[filePath];
+          delete scrollState[filePath];
+          lastFilesKey = "";
+          refreshStatus();
+        });
+      });
+
+      actions.appendChild(ball);
+      actions.appendChild(zoomOut);
+      actions.appendChild(zoomIn);
+      actions.appendChild(rotateLeft);
+      actions.appendChild(rotateRight);
+      actions.appendChild(del);
+
+      var savedScroll = scrollState[filePath];
+      if (savedScroll) {
+        wrap.scrollLeft = savedScroll.left;
+        wrap.scrollTop = savedScroll.top;
+      }
+
+      wrap.addEventListener("scroll", function () {
+        scrollState[filePath] = { left: wrap.scrollLeft, top: wrap.scrollTop };
+      });
+
+      li.dataset.id = page.Id;
+      li.draggable = false;
+      ball.addEventListener("dragstart", function (e) {
+        isDragging = true;
+        dragStartedAt = Date.now();
+        dragPath = page.Id;
+        dragSourceList = listEl;
+        li.classList.add("dragging-card");
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", page.Id);
+        if (e.dataTransfer.setDragImage) {
+          e.dataTransfer.setDragImage(li, li.offsetWidth / 2, 20);
+        }
+        logEvent("dragstart", { id: page.Id });
+      });
+      ball.addEventListener("dragend", function () {
+        isDragging = false;
+        dragPath = "";
+        dragSourceList = null;
+        li.classList.remove("dragging-card");
+        logEvent("dragend");
+      });
+      li.appendChild(wrap);
+      li.appendChild(actions);
+      listEl.appendChild(li);
+    });
+
+    if (scrollToBottom && pages.length > previousCount) {
+      setTimeout(function () {
+        window.scrollTo(0, document.body.scrollHeight);
+      }, 0);
+    }
   }
 
   function toRelativeScanPath(filePath, rootPath) {
@@ -296,6 +320,19 @@
       if (img && img.dataset.baseSrc) {
         img.src = img.dataset.baseSrc + "?v=" + imageVersion[path];
       }
+    });
+  }
+
+  function wireImageRetry(img, filePath) {
+    var retries = 0;
+    img.addEventListener("error", function () {
+      if (!img.dataset.baseSrc) return;
+      if (retries >= 3) return;
+      retries += 1;
+      var stamp = Date.now() + retries;
+      setTimeout(function () {
+        img.src = img.dataset.baseSrc + "?v=" + stamp;
+      }, 400 * retries);
     });
   }
 
@@ -368,18 +405,19 @@
     });
   }
 
-  function enableReorder() {
+  function enableReorder(listEl) {
+    if (!listEl) return;
 
-    filesEl.addEventListener("dragover", function (e) {
-      if (!dragPath) return;
+    listEl.addEventListener("dragover", function (e) {
+      if (!dragPath || dragSourceList !== listEl) return;
       var li = e.target.closest("li");
       if (!li || !li.dataset.id) return;
       e.preventDefault();
       e.dataTransfer.dropEffect = "move";
     });
 
-    filesEl.addEventListener("drop", function (e) {
-      if (!dragPath) return;
+    listEl.addEventListener("drop", function (e) {
+      if (!dragPath || dragSourceList !== listEl) return;
       var li = e.target.closest("li");
       if (!li || !li.dataset.id) return;
       e.preventDefault();
@@ -387,16 +425,18 @@
       var targetId = li.dataset.id || "";
       if (!targetId || targetId === dragPath) {
         dragPath = "";
+        dragSourceList = null;
         return;
       }
 
-      var ordered = Array.prototype.map.call(filesEl.querySelectorAll("li[data-id]"), function (liItem) {
+      var ordered = Array.prototype.map.call(listEl.querySelectorAll("li[data-id]"), function (liItem) {
         return liItem.dataset.id;
       });
       var fromIndex = ordered.indexOf(dragPath);
       var toIndex = ordered.indexOf(targetId);
       if (fromIndex === -1 || toIndex === -1) {
         dragPath = "";
+        dragSourceList = null;
         return;
       }
       var fromId = dragPath;
@@ -404,17 +444,18 @@
       ordered.splice(toIndex, 0, dragPath);
 
       dragPath = "";
+      dragSourceList = null;
 
       logEvent("drop reorder", { from: fromId, to: targetId, ordered: ordered });
       // Optimistic UI reorder
       var map = {};
-      filesEl.querySelectorAll("li[data-id]").forEach(function (node) {
+      listEl.querySelectorAll("li[data-id]").forEach(function (node) {
         map[node.dataset.id] = node;
       });
-      filesEl.innerHTML = "";
+      listEl.innerHTML = "";
       ordered.forEach(function (id) {
         if (map[id]) {
-          filesEl.appendChild(map[id]);
+          listEl.appendChild(map[id]);
         }
       });
       apiPost("/api/reorder", { Ids: ordered }).then(function (res) {
@@ -507,7 +548,8 @@
     });
   });
 
-  enableReorder();
+  enableReorder(filesEl);
+  enableReorder(editFilesEl);
   loadDevices();
   refreshStatus();
   setInterval(refreshStatus, 2000);
@@ -517,4 +559,94 @@
     });
   }
   refreshServerLog();
+
+  function openHeaderModal() {
+    if (!headerModal) return;
+    headerModal.classList.add("show");
+    headerModal.setAttribute("aria-hidden", "false");
+    if (headerText) {
+      headerText.value = "";
+      headerText.focus();
+    }
+    updateHeaderBuild();
+  }
+
+  function closeHeaderModal() {
+    if (!headerModal) return;
+    headerModal.classList.remove("show");
+    headerModal.setAttribute("aria-hidden", "true");
+  }
+
+  function updateHeaderBuild() {
+    if (!headerBuild || !headerText) return;
+    var hasText = !!headerText.value.trim();
+    headerBuild.style.display = hasText ? "inline-flex" : "none";
+  }
+
+  if (headerBtn) {
+    headerBtn.addEventListener("click", function () {
+      openHeaderModal();
+    });
+  }
+
+  if (editHeaderBtn) {
+    editHeaderBtn.addEventListener("click", function () {
+      openHeaderModal();
+    });
+  }
+
+  if (headerText) {
+    headerText.addEventListener("input", function () {
+      updateHeaderBuild();
+    });
+  }
+
+  if (headerCancel) {
+    headerCancel.addEventListener("click", function () {
+      closeHeaderModal();
+    });
+  }
+
+  if (headerModal) {
+    headerModal.addEventListener("click", function (event) {
+      if (event.target === headerModal) {
+        closeHeaderModal();
+      }
+    });
+  }
+
+  if (headerBuild) {
+    headerBuild.addEventListener("click", function () {
+      if (!headerText) return;
+      var text = headerText.value.trim();
+      if (!text) return;
+      apiPost("/api/header", { Text: text }).then(function (res) {
+        if (!res.Ok) {
+          alert(res.Message || "Header page failed");
+          return;
+        }
+        closeHeaderModal();
+        refreshStatus();
+      }).catch(function (err) {
+        alert("Header page failed: " + err);
+      });
+    });
+  }
+
+  if (openPdfBtn) {
+    openPdfBtn.addEventListener("click", function () {
+      apiGet("/api/pickpdf").then(function (res) {
+        if (!res || !res.Path) {
+          return;
+        }
+        apiPost("/api/loadpdf", { Path: res.Path }).then(function (loadRes) {
+          if (!loadRes.Ok) {
+            alert(loadRes.Message || "PDF load failed");
+            return;
+          }
+          refreshStatus();
+        });
+      });
+    });
+  }
 })();

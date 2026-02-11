@@ -216,6 +216,24 @@ namespace KodakScannerApp
                     return;
                 }
 
+                if (path.Equals("api/header", StringComparison.OrdinalIgnoreCase) && context.Request.HttpMethod == "POST")
+                {
+                    var body = ReadBody(context.Request);
+                    var request = _json.Deserialize<HeaderRequest>(body);
+                    var result = _scannerService.AddHeaderPage(request?.Text);
+                    WriteJson(context, result);
+                    return;
+                }
+
+                if (path.Equals("api/loadpdf", StringComparison.OrdinalIgnoreCase) && context.Request.HttpMethod == "POST")
+                {
+                    var body = ReadBody(context.Request);
+                    var request = _json.Deserialize<LoadPdfRequest>(body);
+                    var result = _scannerService.LoadPdf(request?.Path);
+                    WriteJson(context, result);
+                    return;
+                }
+
                 if (path.Equals("api/logs", StringComparison.OrdinalIgnoreCase))
                 {
                     var logPath = Path.Combine(_scannerService.OutputRoot, "debug.log");

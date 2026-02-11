@@ -43,6 +43,16 @@ namespace KodakScannerApp
         public List<string> Ids { get; set; }
     }
 
+    public class HeaderRequest
+    {
+        public string Text { get; set; }
+    }
+
+    public class LoadPdfRequest
+    {
+        public string Path { get; set; }
+    }
+
     public class PageItem
     {
         public string Id { get; set; }

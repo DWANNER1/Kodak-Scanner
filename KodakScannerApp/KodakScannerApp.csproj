@@ -42,6 +42,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="PdfiumViewer" Version="2.13.0" />
+    <PackageReference Include="PdfiumViewer.Native.x64" Version="2021.10.18.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="DividerPageBuilder.cs" />
     <Compile Include="FilePicker.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="Program.cs" />
@@ -50,6 +56,7 @@
       <DependentUpon>MainForm.cs</DependentUpon>
     </Compile>
     <Compile Include="HttpServer.cs" />
+    <Compile Include="PdfImporter.cs" />
     <Compile Include="ScannerService.cs" />
     <Compile Include="WiaScanner.cs" />
     <Compile Include="ImageExporter.cs" />
