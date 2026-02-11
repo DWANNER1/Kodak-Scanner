@@ -23,7 +23,7 @@
       </div>
 
       <nav class="nav">
-        <button class="nav-item active" type="button" data-tab="scanner">Scanner</button>
+        <button class="nav-item active" type="button" data-tab="scanner">Config</button>
         <button class="nav-item" type="button" data-tab="output">Output</button>
         <button class="nav-item" type="button" data-tab="automation">Edit Document</button>
         <button class="nav-item" type="button" data-tab="maintenance">Maintenance</button>
@@ -37,19 +37,14 @@
     </aside>
 
     <main class="content">
-      <header class="topbar">
-        <div>
-          <div class="eyebrow">Scanner</div>
-          <h1>Preferences</h1>
-          <p>Set up the device, quality, and export options in one place.</p>
-        </div>
-        <div class="topbar-actions">
-          <button id="scanBtn" class="primary" type="button">Start Scan</button>
-          <button id="clearBtn" class="ghost" type="button">Clear</button>
-        </div>
-      </header>
-
       <section class="tab-section active" data-section="scanner">
+        <header class="topbar">
+          <div>
+            <div class="eyebrow">Config</div>
+            <h1>Configuration</h1>
+            <p>Set up the device, quality, and export options in one place.</p>
+          </div>
+        </header>
         <section class="card">
           <div class="card-head">
             <h2>Scanner Settings</h2>
@@ -88,6 +83,17 @@
       </section>
 
       <section class="tab-section" data-section="output">
+        <header class="topbar">
+          <div>
+            <div class="eyebrow">Output</div>
+            <h1>Output</h1>
+            <p>Review, reorder, and export your scanned pages.</p>
+          </div>
+          <div class="topbar-actions">
+            <button id="scanBtn" class="primary" type="button">Start Scan</button>
+            <button id="clearBtn" class="ghost" type="button">Clear</button>
+          </div>
+        </header>
         <section class="card">
           <div class="card-head">
             <h2>Export</h2>
@@ -131,6 +137,13 @@
       </section>
 
       <section class="tab-section" data-section="automation">
+        <header class="topbar">
+          <div>
+            <div class="eyebrow">Edit Document</div>
+            <h1>Edit Document</h1>
+            <p>Load a PDF, insert divider pages, and export a revised document.</p>
+          </div>
+        </header>
         <section class="card">
           <div class="card-head">
             <div class="card-title">
@@ -167,6 +180,13 @@
       </section>
 
       <section class="tab-section" data-section="maintenance">
+        <header class="topbar">
+          <div>
+            <div class="eyebrow">Maintenance</div>
+            <h1>Maintenance</h1>
+            <p>Review logs and system diagnostics.</p>
+          </div>
+        </header>
         <section class="card">
           <div class="card-head">
             <h2>Maintenance</h2>
@@ -196,6 +216,13 @@
       </section>
 
       <section class="tab-section" data-section="about">
+        <header class="topbar">
+          <div>
+            <div class="eyebrow">About</div>
+            <h1>About</h1>
+            <p>Application details and build information.</p>
+          </div>
+        </header>
         <section class="card placeholder">
           <h2>About</h2>
           <p>This Windows scanning utility was built to control a Kodak ScanMate i1150 and provide a lightweight, browser-based control panel.</p>

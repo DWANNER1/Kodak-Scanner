@@ -26,11 +26,23 @@ namespace KodakScannerApp
                 {
                     using (var image = document.Render(pageIndex, dpi, dpi, true))
                     {
-                        var filePath = Path.Combine(outputDir, "page_" + (pageIndex + 1).ToString("000") + ".png");
+                        var filePath = Path.Combine(outputDir, "page_" + (pageIndex + 1).ToString("000") + ".jpg");
                         using (var bmp = new Bitmap(image))
                         {
                             bmp.SetResolution(dpi, dpi);
-                            bmp.Save(filePath, ImageFormat.Png);
+                            var encoder = GetJpegEncoder();
+                            if (encoder != null)
+                            {
+                                using (var parameters = new EncoderParameters(1))
+                                {
+                                    parameters.Param[0] = new EncoderParameter(Encoder.Quality, 95L);
+                                    bmp.Save(filePath, encoder, parameters);
+                                }
+                            }
+                            else
+                            {
+                                bmp.Save(filePath, ImageFormat.Jpeg);
+                            }
                         }
                         output.Add(filePath);
                     }
@@ -38,6 +50,18 @@ namespace KodakScannerApp
             }
 
             return output;
+        }
+
+        private static ImageCodecInfo GetJpegEncoder()
+        {
+            foreach (var codec in ImageCodecInfo.GetImageEncoders())
+            {
+                if (codec.MimeType == "image/jpeg")
+                {
+                    return codec;
+                }
+            }
+            return null;
         }
     }
 }

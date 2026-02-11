@@ -20,7 +20,7 @@ namespace KodakScannerApp
             if (dpi <= 0) dpi = 300;
             var width = (int)Math.Round(8.5 * dpi);
             var height = (int)Math.Round(11.0 * dpi);
-            var filePath = Path.Combine(outputDir, "header_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".png");
+            var filePath = Path.Combine(outputDir, "header_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".jpg");
 
             using (var bmp = new Bitmap(width, height))
             {
@@ -66,7 +66,19 @@ namespace KodakScannerApp
                     }
                 }
 
-                bmp.Save(filePath, ImageFormat.Png);
+                var encoder = GetJpegEncoder();
+                if (encoder != null)
+                {
+                    using (var parameters = new EncoderParameters(1))
+                    {
+                        parameters.Param[0] = new EncoderParameter(Encoder.Quality, 95L);
+                        bmp.Save(filePath, encoder, parameters);
+                    }
+                }
+                else
+                {
+                    bmp.Save(filePath, ImageFormat.Jpeg);
+                }
             }
 
             return filePath;
@@ -88,6 +100,18 @@ namespace KodakScannerApp
             }
 
             return new Font("Segoe UI", minSize, FontStyle.Bold, GraphicsUnit.Point);
+        }
+
+        private static ImageCodecInfo GetJpegEncoder()
+        {
+            foreach (var codec in ImageCodecInfo.GetImageEncoders())
+            {
+                if (codec.MimeType == "image/jpeg")
+                {
+                    return codec;
+                }
+            }
+            return null;
         }
     }
 }

@@ -115,16 +115,15 @@ namespace KodakScannerApp
             var ext = Path.GetExtension(imageFile).ToLowerInvariant();
             if (ext == ".jpg" || ext == ".jpeg")
             {
-                WriteJpegObject(writer, xref, imageId, imageFile);
+                WriteJpegObject(writer, xref, imageId, File.ReadAllBytes(imageFile), imageFile);
                 return;
             }
 
-            WriteRgbObject(writer, xref, imageId, imageFile);
+            WriteJpegObject(writer, xref, imageId, EncodeToJpeg(imageFile), imageFile);
         }
 
-        private static void WriteJpegObject(BinaryWriter writer, List<long> xref, int imageId, string imageFile)
+        private static void WriteJpegObject(BinaryWriter writer, List<long> xref, int imageId, byte[] jpegBytes, string imageFile)
         {
-            byte[] jpegBytes = File.ReadAllBytes(imageFile);
             int width;
             int height;
 
@@ -145,59 +144,41 @@ namespace KodakScannerApp
             writer.Write(Encoding.ASCII.GetBytes("\nendstream\nendobj\n"));
         }
 
-        private static void WriteRgbObject(BinaryWriter writer, List<long> xref, int imageId, string imageFile)
+        private static byte[] EncodeToJpeg(string imageFile)
         {
-            int width;
-            int height;
-            byte[] rgbBytes;
-
             using (var image = Image.FromFile(imageFile))
             using (var bmp = new Bitmap(image.Width, image.Height, PixelFormat.Format24bppRgb))
             using (var g = Graphics.FromImage(bmp))
-            {
-                g.DrawImage(image, 0, 0, image.Width, image.Height);
-                width = bmp.Width;
-                height = bmp.Height;
-                var rect = new Rectangle(0, 0, width, height);
-                var data = bmp.LockBits(rect, ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
-                try
-                {
-                    var stride = data.Stride;
-                    var rowBytes = width * 3;
-                    var raw = new byte[stride * height];
-                    System.Runtime.InteropServices.Marshal.Copy(data.Scan0, raw, 0, raw.Length);
-
-                    rgbBytes = new byte[width * height * 3];
-                    for (int y = 0; y < height; y++)
-                    {
-                        Buffer.BlockCopy(raw, y * stride, rgbBytes, y * rowBytes, rowBytes);
-                    }
-                }
-                finally
-                {
-                    bmp.UnlockBits(data);
-                }
-            }
-
-            byte[] compressed;
             using (var ms = new MemoryStream())
             {
-                using (var deflate = new System.IO.Compression.DeflateStream(ms, System.IO.Compression.CompressionLevel.Optimal, true))
+                g.DrawImage(image, 0, 0, image.Width, image.Height);
+                var encoder = GetJpegEncoder();
+                if (encoder != null)
                 {
-                    deflate.Write(rgbBytes, 0, rgbBytes.Length);
+                    using (var parameters = new EncoderParameters(1))
+                    {
+                        parameters.Param[0] = new EncoderParameter(Encoder.Quality, 95L);
+                        bmp.Save(ms, encoder, parameters);
+                    }
                 }
-                compressed = ms.ToArray();
+                else
+                {
+                    bmp.Save(ms, ImageFormat.Jpeg);
+                }
+                return ms.ToArray();
             }
+        }
 
-            xref.Add(writer.BaseStream.Position);
-            writer.Write(Encoding.ASCII.GetBytes(imageId + " 0 obj\n"));
-            writer.Write(Encoding.ASCII.GetBytes("<< /Type /XObject /Subtype /Image "));
-            writer.Write(Encoding.ASCII.GetBytes("/Width " + width + " /Height " + height + " "));
-            writer.Write(Encoding.ASCII.GetBytes("/ColorSpace /DeviceRGB /BitsPerComponent 8 "));
-            writer.Write(Encoding.ASCII.GetBytes("/Filter /FlateDecode /Length " + compressed.Length + " >>\n"));
-            writer.Write(Encoding.ASCII.GetBytes("stream\n"));
-            writer.Write(compressed);
-            writer.Write(Encoding.ASCII.GetBytes("\nendstream\nendobj\n"));
+        private static ImageCodecInfo GetJpegEncoder()
+        {
+            foreach (var codec in ImageCodecInfo.GetImageEncoders())
+            {
+                if (codec.MimeType == "image/jpeg")
+                {
+                    return codec;
+                }
+            }
+            return null;
         }
 
         private static PageSize GetPageSize(string imageFile)
