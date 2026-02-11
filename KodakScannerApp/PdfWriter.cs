@@ -161,8 +161,17 @@ namespace KodakScannerApp
         {
             using (var image = Image.FromFile(imageFile))
             {
-                var dpiX = image.HorizontalResolution <= 1 ? 300 : image.HorizontalResolution;
-                var dpiY = image.VerticalResolution <= 1 ? 300 : image.VerticalResolution;
+                var dpiX = image.HorizontalResolution;
+                var dpiY = image.VerticalResolution;
+
+                if (dpiX <= 1 || dpiX < 150 || dpiX > 1200)
+                {
+                    dpiX = 300;
+                }
+                if (dpiY <= 1 || dpiY < 150 || dpiY > 1200)
+                {
+                    dpiY = 300;
+                }
                 var widthPt = image.Width * 72.0 / dpiX;
                 var heightPt = image.Height * 72.0 / dpiY;
 
