@@ -14,17 +14,21 @@ namespace KodakScannerApp
         public List<DeviceInfoDto> ListDevices()
         {
             var devices = new List<DeviceInfoDto>();
-            using (var session = CreateSession())
+            var session = CreateSession();
+            try
             {
                 session.Open();
-                foreach (var source in session)
+                foreach (var source in session.GetSources())
                 {
                     devices.Add(new DeviceInfoDto
                     {
-                        Id = source.Name ?? source.Identity.Id.ToString(),
+                        Id = source.Name ?? source.Id.ToString(),
                         Name = source.Name
                     });
                 }
+            }
+            finally
+            {
                 session.Close();
             }
             return devices;
@@ -35,7 +39,8 @@ namespace KodakScannerApp
             var files = new List<string>();
             if (settings == null) settings = new ScanSettings();
 
-            using (var session = CreateSession())
+            var session = CreateSession();
+            try
             {
                 session.Open();
 
@@ -65,7 +70,10 @@ namespace KodakScannerApp
                 {
                     try
                     {
-                        if (e.Data == IntPtr.Zero) return;
+                        if (e.NativeData == IntPtr.Zero && e.MemoryData == null && string.IsNullOrWhiteSpace(e.FileDataPath))
+                        {
+                            return;
+                        }
                         using (var stream = e.GetNativeImageStream())
                         {
                             if (stream == null) return;
@@ -106,13 +114,16 @@ namespace KodakScannerApp
                     {
                         source.Close();
                     }
-                    session.Close();
                 }
 
                 if (error != null)
                 {
                     throw new InvalidOperationException(error.Message, error);
                 }
+            }
+            finally
+            {
+                session.Close();
             }
 
             return files;
@@ -129,19 +140,27 @@ namespace KodakScannerApp
         {
             if (string.IsNullOrWhiteSpace(deviceId))
             {
-                return session.FirstOrDefault();
+                foreach (var src in session.GetSources())
+                {
+                    return src;
+                }
+                return null;
             }
 
-            foreach (var source in session)
+            foreach (var source in session.GetSources())
             {
                 if (string.Equals(source.Name, deviceId, StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(source.Identity.Id.ToString(), deviceId, StringComparison.OrdinalIgnoreCase))
+                    string.Equals(source.Id.ToString(), deviceId, StringComparison.OrdinalIgnoreCase))
                 {
                     return source;
                 }
             }
 
-            return session.FirstOrDefault();
+            foreach (var src in session.GetSources())
+            {
+                return src;
+            }
+            return null;
         }
 
         private static void ApplyCapabilities(DataSource source, ScanSettings settings)
@@ -174,7 +193,7 @@ namespace KodakScannerApp
             if (capability == null) return;
             try
             {
-                capability.SetValue(new TWFix32(value));
+                capability.SetValue(ToFix32(value));
             }
             catch { }
         }
@@ -214,6 +233,13 @@ namespace KodakScannerApp
             if (string.Equals(mode, "bw", StringComparison.OrdinalIgnoreCase)) return PixelType.BlackWhite;
             if (string.Equals(mode, "gray", StringComparison.OrdinalIgnoreCase)) return PixelType.Gray;
             return PixelType.RGB;
+        }
+
+        private static TWFix32 ToFix32(double value)
+        {
+            var whole = (short)Math.Floor(value);
+            var fraction = (ushort)Math.Round((value - Math.Floor(value)) * 65536.0);
+            return new TWFix32 { Whole = whole, Fraction = fraction };
         }
 
         private static string SaveImageWithFallback(Image image, string basePath)
