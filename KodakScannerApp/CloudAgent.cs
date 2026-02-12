@@ -179,6 +179,38 @@ namespace KodakScannerApp
                 _ = SendMessage(ws, new { type = "scan_result", result });
                 return;
             }
+
+            if (type == "delete")
+            {
+                var id = data.ContainsKey("id") ? data["id"]?.ToString() : "";
+                var result = _scannerService.DeleteFile(id);
+                _ = SendMessage(ws, new { type = "delete_result", result });
+                return;
+            }
+
+            if (type == "reorder")
+            {
+                var ids = ExtractIdList(data);
+                var result = _scannerService.ReorderFiles(ids);
+                _ = SendMessage(ws, new { type = "reorder_result", result });
+                return;
+            }
+
+            if (type == "header")
+            {
+                var text = data.ContainsKey("text") ? data["text"]?.ToString() : "";
+                var result = _scannerService.AddHeaderPage(text);
+                _ = SendMessage(ws, new { type = "header_result", result });
+                return;
+            }
+
+            if (type == "export")
+            {
+                var request = ExtractExportRequest(data);
+                var result = _scannerService.Export(request);
+                _ = SendMessage(ws, new { type = "export_result", result });
+                return;
+            }
         }
 
         private ScanSettings ExtractSettings(Dictionary<string, object> data)
@@ -195,6 +227,36 @@ namespace KodakScannerApp
             if (dict.ContainsKey("Duplex")) settings.Duplex = Convert.ToBoolean(dict["Duplex"]);
             if (dict.ContainsKey("MaxPages")) settings.MaxPages = Convert.ToInt32(dict["MaxPages"]);
             return settings;
+        }
+
+        private List<string> ExtractIdList(Dictionary<string, object> data)
+        {
+            var list = new List<string>();
+            if (!data.ContainsKey("ids")) return list;
+            var raw = data["ids"] as object[];
+            if (raw == null) return list;
+            foreach (var item in raw)
+            {
+                if (item != null)
+                {
+                    list.Add(item.ToString());
+                }
+            }
+            return list;
+        }
+
+        private ExportRequest ExtractExportRequest(Dictionary<string, object> data)
+        {
+            var request = new ExportRequest();
+            if (!data.ContainsKey("request")) return request;
+            var dict = data["request"] as Dictionary<string, object>;
+            if (dict == null) return request;
+            if (dict.ContainsKey("Format")) request.Format = dict["Format"]?.ToString();
+            if (dict.ContainsKey("OutputPath")) request.OutputPath = dict["OutputPath"]?.ToString();
+            if (dict.ContainsKey("BaseName")) request.BaseName = dict["BaseName"]?.ToString();
+            if (dict.ContainsKey("Append")) request.Append = Convert.ToBoolean(dict["Append"]);
+            if (dict.ContainsKey("AppendPath")) request.AppendPath = dict["AppendPath"]?.ToString();
+            return request;
         }
 
         private async Task SendDevices(ClientWebSocket ws)

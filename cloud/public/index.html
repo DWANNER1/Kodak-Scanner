@@ -73,7 +73,36 @@
       <section class="tab-section hidden" id="tab-output">
         <section class="card">
           <div class="row">
-            <h2>Scanned Pages</h2>
+            <div>
+              <h2>Export</h2>
+              <div class="status">Save PDFs locally on the scanner PC.</div>
+            </div>
+            <div class="row">
+              <button id="exportBtn" class="primary">Export</button>
+              <button id="appendBtn">Append</button>
+            </div>
+          </div>
+          <div class="grid">
+            <label>Output Folder
+              <input id="outputPath" type="text" placeholder="C:\\Users\\...\\Documents\\Scans" />
+            </label>
+            <label>Base Name
+              <input id="baseName" type="text" value="scan" />
+            </label>
+            <label>Append Path (optional)
+              <input id="appendPath" type="text" placeholder="C:\\...\\existing.pdf" />
+            </label>
+          </div>
+          <div id="exportStatus" class="status"></div>
+        </section>
+
+        <section class="card">
+          <div class="row">
+            <div>
+              <h2>Scanned Pages</h2>
+              <div class="status">Drag to reorder, delete, or insert header pages.</div>
+            </div>
+            <button id="headerBtn">Header Page</button>
           </div>
           <ul id="files" class="file-list"></ul>
         </section>
