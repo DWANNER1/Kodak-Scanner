@@ -41,3 +41,26 @@ The installer will be under `desktop-app\release`.
 ## Notes
 - If the device only exposes TWAIN and not WIA, WIA-based scanning will not find the scanner. In that case, a TWAIN-based module is required.
 - Output defaults to `Documents\Scans` unless overridden in the UI.
+
+## Cloud UI (Render) + Local Agent
+The scanner must remain on a local Windows PC. The cloud service provides a remote UI and relays commands to the local agent over WebSockets.
+
+### Cloud service
+From `cloud`:
+```powershell
+npm install
+npm start
+```
+
+Environment variables:
+- `CLOUD_USER` (default: kodak)
+- `CLOUD_PASS` (default: kodak)
+- `PORT` (Render provides this automatically)
+
+### Local agent
+Set these in `KodakScannerApp\App.config`:
+- `CloudUrl` (e.g., https://YOUR-RENDER-SERVICE.onrender.com)
+- `CloudUser` / `CloudPass`
+- `DeviceName`
+
+Build and run the scanner app normally. It will connect to the cloud automatically and listen for scan commands.

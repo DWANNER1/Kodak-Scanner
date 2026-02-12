@@ -10,6 +10,7 @@ namespace KodakScannerApp
     {
         private HttpServer _server;
         private ScannerService _scannerService;
+        private CloudAgent _cloudAgent;
 
         public MainForm()
         {
@@ -25,6 +26,8 @@ namespace KodakScannerApp
 
             _scannerService = new ScannerService(outputRoot);
             _server = new HttpServer(_scannerService, Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "www"));
+            _cloudAgent = new CloudAgent(_scannerService);
+            _cloudAgent.Start();
             try
             {
                 _server.Start();
@@ -77,6 +80,10 @@ namespace KodakScannerApp
             if (_server != null)
             {
                 _server.Stop();
+            }
+            if (_cloudAgent != null)
+            {
+                _cloudAgent.Stop();
             }
 
             base.OnFormClosing(e);

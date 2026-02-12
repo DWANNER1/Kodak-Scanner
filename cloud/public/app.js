@@ -1,0 +1,100 @@
+let token = "";
+let socket = null;
+
+const loginBtn = document.getElementById("loginBtn");
+const loginStatus = document.getElementById("loginStatus");
+const loginCard = document.getElementById("loginCard");
+const controlCard = document.getElementById("controlCard");
+const statusCard = document.getElementById("statusCard");
+const agentState = document.getElementById("agentState");
+const deviceSelect = document.getElementById("deviceSelect");
+const statusLog = document.getElementById("statusLog");
+const scanStatus = document.getElementById("scanStatus");
+const refreshDevices = document.getElementById("refreshDevices");
+const scanBtn = document.getElementById("scanBtn");
+
+function logStatus(msg) {
+  statusLog.textContent = msg + "\n" + statusLog.textContent;
+}
+
+function setAgentStatus(connected) {
+  agentState.textContent = connected ? "Agent: Online" : "Agent: Offline";
+  agentState.style.background = connected ? "#d7f4e3" : "#f5d7d7";
+}
+
+async function login() {
+  const username = document.getElementById("username").value;
+  const password = document.getElementById("password").value;
+  loginStatus.textContent = "Signing in...";
+  const res = await fetch("/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password })
+  });
+  const data = await res.json();
+  if (!data.ok) {
+    loginStatus.textContent = data.message || "Login failed";
+    return;
+  }
+  token = data.token;
+  loginStatus.textContent = "Signed in";
+  loginCard.classList.add("hidden");
+  controlCard.classList.remove("hidden");
+  statusCard.classList.remove("hidden");
+  connectSocket();
+}
+
+function connectSocket() {
+  const proto = location.protocol === "https:" ? "wss" : "ws";
+  socket = new WebSocket(`${proto}://${location.host}/?token=${token}&role=ui`);
+  socket.onmessage = (evt) => {
+    const msg = JSON.parse(evt.data);
+    if (msg.type === "agent_status") {
+      setAgentStatus(msg.connected);
+      return;
+    }
+    if (msg.type === "devices") {
+      deviceSelect.innerHTML = "";
+      (msg.devices || []).forEach((d) => {
+        const opt = document.createElement("option");
+        opt.value = d.Id;
+        opt.textContent = d.Name;
+        deviceSelect.appendChild(opt);
+      });
+      return;
+    }
+    if (msg.type === "status") {
+      scanStatus.textContent = `${msg.status.State}: ${msg.status.Message}`;
+      logStatus(JSON.stringify(msg.status));
+      return;
+    }
+    if (msg.type === "scan_result") {
+      scanStatus.textContent = msg.result.Message || "Scan result";
+      logStatus(JSON.stringify(msg.result));
+      return;
+    }
+    logStatus(JSON.stringify(msg));
+  };
+}
+
+loginBtn.addEventListener("click", login);
+
+refreshDevices.addEventListener("click", () => {
+  if (!socket) return;
+  socket.send(JSON.stringify({ type: "get_devices" }));
+});
+
+scanBtn.addEventListener("click", () => {
+  if (!socket) return;
+  const payload = {
+    type: "scan_start",
+    settings: {
+      DeviceId: deviceSelect.value,
+      Dpi: parseInt(document.getElementById("dpi").value || "300", 10),
+      ColorMode: document.getElementById("colorMode").value,
+      Duplex: document.getElementById("duplex").value === "true",
+      MaxPages: parseInt(document.getElementById("maxPages").value || "100", 10)
+    }
+  };
+  socket.send(JSON.stringify(payload));
+});
