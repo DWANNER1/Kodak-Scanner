@@ -177,10 +177,7 @@ namespace KodakScannerApp
 
             TrySetBool(source.Capabilities.CapFeederEnabled, BoolType.True);
 
-            if (settings.Duplex)
-            {
-                TrySetBool(source.Capabilities.CapDuplexEnabled, BoolType.True);
-            }
+            TrySetBool(source.Capabilities.CapDuplexEnabled, settings.Duplex ? BoolType.True : BoolType.False);
 
             if (settings.MaxPages > 0)
             {
