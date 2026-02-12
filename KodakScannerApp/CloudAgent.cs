@@ -128,7 +128,8 @@ namespace KodakScannerApp
             while (!token.IsCancellationRequested && ws.State == WebSocketState.Open)
             {
                 var status = _scannerService.GetStatus();
-                await SendMessage(ws, new { type = "status", status });
+                var about = _scannerService.GetAboutInfo();
+                await SendMessage(ws, new { type = "status", status, about });
                 await UploadPreviews(status);
                 await Task.Delay(2000, token);
             }

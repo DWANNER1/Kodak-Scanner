@@ -13,6 +13,7 @@ const scanStatus = document.getElementById("scanStatus");
 const refreshDevices = document.getElementById("refreshDevices");
 const scanBtn = document.getElementById("scanBtn");
 const filesEl = document.getElementById("files");
+const agentVersion = document.getElementById("agentVersion");
 
 function logStatus(msg) {
   statusLog.textContent = msg + "\n" + statusLog.textContent;
@@ -68,6 +69,9 @@ function connectSocket() {
       scanStatus.textContent = `${msg.status.State}: ${msg.status.Message}`;
       logStatus(JSON.stringify(msg.status));
       renderPages(msg.status.Pages || []);
+      if (msg.about && agentVersion) {
+        agentVersion.textContent = `Build: ${msg.about.BuildTime} · Version ${msg.about.Version}`;
+      }
       return;
     }
     if (msg.type === "scan_result") {
