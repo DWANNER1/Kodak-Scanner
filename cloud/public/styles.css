@@ -28,6 +28,34 @@ h1 {
   box-shadow: 0 10px 20px rgba(15, 20, 30, 0.06);
 }
 
+.tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tab-btn {
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #e9edf7;
+  border: none;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.tab-btn.active {
+  background: #2b57d6;
+  color: #fff;
+}
+
+.tab-section {
+  display: none;
+}
+
+.tab-section.active {
+  display: block;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

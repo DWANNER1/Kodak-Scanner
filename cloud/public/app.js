@@ -4,8 +4,10 @@ let socket = null;
 const loginBtn = document.getElementById("loginBtn");
 const loginStatus = document.getElementById("loginStatus");
 const loginCard = document.getElementById("loginCard");
-const controlCard = document.getElementById("controlCard");
-const statusCard = document.getElementById("statusCard");
+const tabsCard = document.getElementById("tabsCard");
+const tabButtons = document.querySelectorAll(".tab-btn");
+const tabSections = document.querySelectorAll(".tab-section");
+const aboutInfo = document.getElementById("aboutInfo");
 const agentState = document.getElementById("agentState");
 const deviceSelect = document.getElementById("deviceSelect");
 const statusLog = document.getElementById("statusLog");
@@ -24,6 +26,17 @@ function setAgentStatus(connected) {
   agentState.style.background = connected ? "#d7f4e3" : "#f5d7d7";
 }
 
+function setActiveTab(name) {
+  tabButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.tab === name));
+  tabSections.forEach((section) => {
+    section.classList.toggle("active", section.id === `tab-${name}`);
+  });
+}
+
+tabButtons.forEach((btn) => {
+  btn.addEventListener("click", () => setActiveTab(btn.dataset.tab));
+});
+
 async function login() {
   const username = document.getElementById("username").value;
   const password = document.getElementById("password").value;
@@ -41,8 +54,9 @@ async function login() {
   token = data.token;
   loginStatus.textContent = "Signed in";
   loginCard.classList.add("hidden");
-  controlCard.classList.remove("hidden");
-  statusCard.classList.remove("hidden");
+  tabsCard.classList.remove("hidden");
+  setActiveTab("config");
+  tabSections.forEach((section) => section.classList.remove("hidden"));
   connectSocket();
 }
 
@@ -71,6 +85,9 @@ function connectSocket() {
       renderPages(msg.status.Pages || []);
       if (msg.about && agentVersion) {
         agentVersion.textContent = `Build: ${msg.about.BuildTime} · Version ${msg.about.Version}`;
+        if (aboutInfo) {
+          aboutInfo.textContent = `Build: ${msg.about.BuildTime} · Version ${msg.about.Version}`;
+        }
       }
       return;
     }
