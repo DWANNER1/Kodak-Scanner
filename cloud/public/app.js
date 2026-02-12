@@ -12,6 +12,7 @@ const statusLog = document.getElementById("statusLog");
 const scanStatus = document.getElementById("scanStatus");
 const refreshDevices = document.getElementById("refreshDevices");
 const scanBtn = document.getElementById("scanBtn");
+const filesEl = document.getElementById("files");
 
 function logStatus(msg) {
   statusLog.textContent = msg + "\n" + statusLog.textContent;
@@ -66,6 +67,7 @@ function connectSocket() {
     if (msg.type === "status") {
       scanStatus.textContent = `${msg.status.State}: ${msg.status.Message}`;
       logStatus(JSON.stringify(msg.status));
+      renderPages(msg.status.Pages || []);
       return;
     }
     if (msg.type === "scan_result") {
@@ -83,6 +85,33 @@ refreshDevices.addEventListener("click", () => {
   if (!socket) return;
   socket.send(JSON.stringify({ type: "get_devices" }));
 });
+
+function renderPages(pages) {
+  if (!filesEl) return;
+  filesEl.innerHTML = "";
+  pages.forEach((page, index) => {
+    const li = document.createElement("li");
+    const wrap = document.createElement("div");
+    wrap.className = "file-thumb-wrap";
+    const img = document.createElement("img");
+    img.className = "file-thumb";
+    img.alt = "Scanned page preview";
+    img.src = page.PreviewUrl || "";
+    wrap.appendChild(img);
+    const actions = document.createElement("div");
+    actions.className = "file-actions";
+    const chip = document.createElement("span");
+    chip.className = "page-chip";
+    chip.textContent = `Page ${index + 1}`;
+    const name = document.createElement("span");
+    name.textContent = page.Name || "";
+    actions.appendChild(chip);
+    actions.appendChild(name);
+    li.appendChild(wrap);
+    li.appendChild(actions);
+    filesEl.appendChild(li);
+  });
+}
 
 scanBtn.addEventListener("click", () => {
   if (!socket) return;

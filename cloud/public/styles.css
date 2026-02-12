@@ -96,8 +96,61 @@ pre {
   overflow: auto;
 }
 
+.file-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.file-list li {
+  border: 1px solid #e4e8f2;
+  border-radius: 12px;
+  background: #fff;
+  padding: 10px;
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.file-thumb-wrap {
+  border: 1px solid #e3e7f1;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #f5f7fb;
+}
+
+.file-thumb {
+  width: 100%;
+  height: 200px;
+  object-fit: contain;
+  display: block;
+}
+
+.file-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #4a566f;
+}
+
+.page-chip {
+  background: #0f1420;
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+}
+
 @media (max-width: 720px) {
   .grid {
+    grid-template-columns: 1fr;
+  }
+  .file-list {
     grid-template-columns: 1fr;
   }
 }

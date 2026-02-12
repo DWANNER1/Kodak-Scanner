@@ -20,6 +20,7 @@ namespace KodakScannerApp
         private string _username;
         private string _password;
         private string _deviceName;
+        private readonly HashSet<string> _uploadedPreviews = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         public CloudAgent(ScannerService scannerService)
         {
@@ -128,6 +129,7 @@ namespace KodakScannerApp
             {
                 var status = _scannerService.GetStatus();
                 await SendMessage(ws, new { type = "status", status });
+                await UploadPreviews(status);
                 await Task.Delay(2000, token);
             }
         }
@@ -198,6 +200,77 @@ namespace KodakScannerApp
         {
             var devices = _scannerService.ListDevices();
             await SendMessage(ws, new { type = "devices", devices });
+        }
+
+        private async Task UploadPreviews(ScanStatus status)
+        {
+            if (status == null || status.Pages == null) return;
+            foreach (var page in status.Pages)
+            {
+                if (page == null || string.IsNullOrWhiteSpace(page.Path)) continue;
+                if (_uploadedPreviews.Contains(page.Id)) continue;
+
+                try
+                {
+                    var previewPath = BuildPreview(page.Path);
+                    if (string.IsNullOrWhiteSpace(previewPath)) continue;
+
+                    var token = await LoginAsync(CancellationToken.None);
+                    if (string.IsNullOrWhiteSpace(token)) return;
+
+                    var uploadUrl = _cloudUrl.TrimEnd('/') + "/upload?token=" + token + "&pageId=" + Uri.EscapeDataString(page.Id);
+                    using (var client = new HttpClient())
+                    using (var content = new MultipartFormDataContent())
+                    using (var stream = System.IO.File.OpenRead(previewPath))
+                    {
+                        content.Add(new StreamContent(stream), "file", System.IO.Path.GetFileName(previewPath));
+                        var response = await client.PostAsync(uploadUrl, content);
+                        if (response.IsSuccessStatusCode)
+                        {
+                            _uploadedPreviews.Add(page.Id);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log("preview upload error " + ex.Message);
+                }
+            }
+        }
+
+        private string BuildPreview(string filePath)
+        {
+            try
+            {
+                var previewDir = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(filePath) ?? "", "previews");
+                System.IO.Directory.CreateDirectory(previewDir);
+                var name = System.IO.Path.GetFileNameWithoutExtension(filePath) + "_preview.jpg";
+                var previewPath = System.IO.Path.Combine(previewDir, name);
+                if (System.IO.File.Exists(previewPath))
+                {
+                    return previewPath;
+                }
+
+                using (var image = System.Drawing.Image.FromFile(filePath))
+                {
+                    var maxWidth = 900;
+                    var scale = Math.Min(1.0, maxWidth / (double)image.Width);
+                    var width = (int)Math.Max(1, image.Width * scale);
+                    var height = (int)Math.Max(1, image.Height * scale);
+                    using (var bmp = new System.Drawing.Bitmap(width, height))
+                    using (var g = System.Drawing.Graphics.FromImage(bmp))
+                    {
+                        g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                        g.DrawImage(image, 0, 0, width, height);
+                        bmp.Save(previewPath, System.Drawing.Imaging.ImageFormat.Jpeg);
+                    }
+                }
+                return previewPath;
+            }
+            catch
+            {
+                return "";
+            }
         }
 
         private async Task SendMessage(ClientWebSocket ws, object payload)
