@@ -6,14 +6,16 @@
     <OutputType>WinExe</OutputType>
     <RootNamespace>KodakScannerApp</RootNamespace>
     <AssemblyName>KodakScannerApp</AssemblyName>
-    <AssemblyVersion>3.0.5.0</AssemblyVersion>
-    <FileVersion>3.0.5.0</FileVersion>
-    <Version>3.0.5</Version>
+    <AssemblyVersion>3.0.6.0</AssemblyVersion>
+    <FileVersion>3.0.6.0</FileVersion>
+    <Version>3.0.6</Version>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Prefer32Bit>false</Prefer32Bit>
     <PlatformTarget>x64</PlatformTarget>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>

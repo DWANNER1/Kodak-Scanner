@@ -168,6 +168,7 @@ namespace KodakScannerApp
             if (source == null || !source.IsOpen) return;
 
             var dpi = settings.Dpi > 0 ? settings.Dpi : 300;
+            var scanSide = NormalizeScanSide(settings);
 
             SetFix32(source.Capabilities.ICapXResolution, dpi);
             SetFix32(source.Capabilities.ICapYResolution, dpi);
@@ -175,9 +176,11 @@ namespace KodakScannerApp
             var pixel = MapPixelType(settings.ColorMode);
             TrySetPixel(source.Capabilities.ICapPixelType, pixel);
 
-            TrySetBool(source.Capabilities.CapFeederEnabled, BoolType.True);
+            var needsDuplexPath = scanSide == "back" || scanSide == "both";
 
-            TrySetBool(source.Capabilities.CapDuplexEnabled, settings.Duplex ? BoolType.True : BoolType.False);
+            TrySetBool(source.Capabilities.CapFeederEnabled, BoolType.True);
+            TrySetBool(source.Capabilities.CapDuplexEnabled, needsDuplexPath ? BoolType.True : BoolType.False);
+            TrySetCameraSide(source.Capabilities.CapCameraSide, MapCameraSide(scanSide));
 
             if (settings.MaxPages > 0)
             {
@@ -215,6 +218,16 @@ namespace KodakScannerApp
             catch { }
         }
 
+        private static void TrySetCameraSide(ICapWrapper<CameraSide> capability, CameraSide value)
+        {
+            if (capability == null) return;
+            try
+            {
+                capability.SetValue(value);
+            }
+            catch { }
+        }
+
         private static void TrySetCount(ICapWrapper<int> capability, int value)
         {
             if (capability == null) return;
@@ -230,6 +243,26 @@ namespace KodakScannerApp
             if (string.Equals(mode, "bw", StringComparison.OrdinalIgnoreCase)) return PixelType.BlackWhite;
             if (string.Equals(mode, "gray", StringComparison.OrdinalIgnoreCase)) return PixelType.Gray;
             return PixelType.RGB;
+        }
+
+        private static string NormalizeScanSide(ScanSettings settings)
+        {
+            var scanSide = settings?.ScanSide;
+            if (string.IsNullOrWhiteSpace(scanSide))
+            {
+                return settings != null && settings.Duplex ? "both" : "front";
+            }
+
+            if (string.Equals(scanSide, "back", StringComparison.OrdinalIgnoreCase)) return "back";
+            if (string.Equals(scanSide, "both", StringComparison.OrdinalIgnoreCase)) return "both";
+            return "front";
+        }
+
+        private static CameraSide MapCameraSide(string scanSide)
+        {
+            if (string.Equals(scanSide, "back", StringComparison.OrdinalIgnoreCase)) return CameraSide.Bottom;
+            if (string.Equals(scanSide, "both", StringComparison.OrdinalIgnoreCase)) return CameraSide.Both;
+            return CameraSide.Top;
         }
 
         private static TWFix32 ToFix32(double value)

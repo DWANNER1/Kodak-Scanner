@@ -77,6 +77,10 @@ namespace KodakScannerApp
 
             if (settings.Dpi <= 0) settings.Dpi = 300;
             if (string.IsNullOrWhiteSpace(settings.ColorMode)) settings.ColorMode = "color";
+            if (string.IsNullOrWhiteSpace(settings.ScanSide))
+            {
+                settings.ScanSide = settings.Duplex ? "both" : "front";
+            }
             if (settings.MaxPages <= 0) settings.MaxPages = 100;
             if (string.IsNullOrWhiteSpace(settings.DeviceId))
             {

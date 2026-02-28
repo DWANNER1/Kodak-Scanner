@@ -15,6 +15,7 @@ namespace KodakScannerApp
         public int Dpi { get; set; }
         public string ColorMode { get; set; }
         public bool Duplex { get; set; }
+        public string ScanSide { get; set; }
         public int MaxPages { get; set; }
     }
 

@@ -521,7 +521,7 @@
       DeviceId: deviceSelect.value,
       Dpi: parseInt(document.getElementById("dpi").value || "300", 10),
       ColorMode: document.getElementById("colorMode").value,
-      Duplex: document.getElementById("duplex").value === "true",
+      ScanSide: document.getElementById("scanSide").value,
       MaxPages: parseInt(document.getElementById("maxPages").value || "100", 10)
     };
 
