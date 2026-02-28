@@ -28,6 +28,7 @@
   var scrollState = {};
   var imageVersion = {};
   var lastFilesKey = "";
+  var lastEditFilesKey = "";
   var isDragging = false;
   var dragPath = "";
   var dragSourceList = null;
@@ -37,6 +38,7 @@
   var serverLogBtn = document.getElementById("refreshServerLog");
   var lastLogSignature = "";
   var headerBtn = document.getElementById("headerBtn");
+  var reverseBtn = document.getElementById("reverseBtn");
   var editHeaderBtn = document.getElementById("editHeaderBtn");
   var openPdfBtn = document.getElementById("openPdfBtn");
   var exportOverwriteBtn = document.getElementById("exportOverwriteBtn");
@@ -171,19 +173,46 @@
           return (i + 1) + ":" + p.Id + ":" + name;
         }));
         var nextKey = status.Pages.map(function (p) { return p.Id + ":" + p.Path; }).join("|");
-        lastFilesKey = nextKey;
-        renderPageList(filesEl, status.Pages, true);
         lastMode = status.Mode || "";
         lastEditPath = status.EditSourcePath || "";
         if (lastMode === "edit") {
-          renderPageList(editFilesEl, status.Pages, false);
-        } else if (editFilesEl) {
-          editFilesEl.innerHTML = "";
-          editFilesEl.dataset.count = "0";
+          if (nextKey !== lastEditFilesKey) {
+            lastEditFilesKey = nextKey;
+            renderPageList(editFilesEl, status.Pages, false);
+          }
+        } else {
+          if (nextKey !== lastFilesKey) {
+            lastFilesKey = nextKey;
+            renderPageList(filesEl, status.Pages, true);
+          }
+          if (editFilesEl && editFilesEl.dataset.count !== "0") {
+            editFilesEl.innerHTML = "";
+            editFilesEl.dataset.count = "0";
+          }
+          lastEditFilesKey = "";
         }
         updateEditMeta();
+        if (status.Pages.length === 0) {
+          clearPageViews();
+        }
       }
     });
+  }
+
+  function clearPageViews() {
+    lastFilesKey = "";
+    lastEditFilesKey = "";
+    zoomState = {};
+    scrollState = {};
+    imageVersion = {};
+    if (filesEl) {
+      filesEl.innerHTML = "";
+      filesEl.dataset.count = "0";
+    }
+    if (editFilesEl) {
+      editFilesEl.innerHTML = "";
+      editFilesEl.dataset.count = "0";
+    }
   }
 
   function updateEditMeta() {
@@ -281,6 +310,7 @@
           delete imageVersion[filePath];
           delete scrollState[filePath];
           lastFilesKey = "";
+          lastEditFilesKey = "";
           refreshStatus();
         });
       });
@@ -509,8 +539,34 @@
           alert(res.Message || "Reorder failed");
         }
         lastFilesKey = "";
+        lastEditFilesKey = "";
         refreshStatus();
       });
+    });
+  }
+
+  function reverseCurrentOrder() {
+    if (!filesEl) return;
+    var ordered = Array.prototype.map.call(filesEl.querySelectorAll("li[data-id]"), function (liItem) {
+      return liItem.dataset.id;
+    });
+    if (ordered.length < 2) {
+      return;
+    }
+    if (!confirm("Reverse the order of all scanned pages?")) {
+      return;
+    }
+
+    ordered.reverse();
+    logEvent("reverse order", { ordered: ordered });
+    apiPost("/api/reorder", { Ids: ordered }).then(function (res) {
+      logEvent("reverse result", res);
+      if (!res.Ok) {
+        alert(res.Message || "Reverse order failed");
+        return;
+      }
+      lastFilesKey = "";
+      refreshStatus();
     });
   }
 
@@ -587,6 +643,7 @@
     event.preventDefault();
     event.stopPropagation();
     apiPost("/api/clear", {}).then(function () {
+      clearPageViews();
       refreshStatus();
     }).catch(function (err) {
       alert("Clear failed: " + err);
@@ -632,6 +689,12 @@
   if (headerBtn) {
     headerBtn.addEventListener("click", function () {
       openHeaderModal();
+    });
+  }
+
+  if (reverseBtn) {
+    reverseBtn.addEventListener("click", function () {
+      reverseCurrentOrder();
     });
   }
 

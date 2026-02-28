@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using System.Reflection;
-using System.Drawing;
 
 namespace KodakScannerApp
 {
@@ -303,21 +302,23 @@ namespace KodakScannerApp
 
                 if (request.Append && File.Exists(outputFile))
                 {
-                    var merged = new List<string>();
-                    merged.AddRange(GetImagesInFolder(outputDir));
-                    foreach (var f in files)
+                    var appendImportDir = Path.Combine(_outputRoot, "append_" + DateTime.Now.ToString("yyyyMMdd_HHmmss"));
+                    try
                     {
-                        if (!merged.Exists(x => string.Equals(x, f, StringComparison.OrdinalIgnoreCase)))
-                        {
-                            merged.Add(f);
-                        }
+                        var mergedPages = PdfImporter.RenderPdfToImages(outputFile, appendImportDir);
+                        mergedPages.AddRange(new List<PageItem>(_pages));
+                        PdfWriter.WritePdfFromPages(mergedPages, outputFile);
                     }
-                    PdfWriter.WritePdfFromImages(merged, outputFile);
+                    finally
+                    {
+                        TryDeleteDirectory(appendImportDir);
+                    }
                 }
                 else
                 {
                     PdfWriter.WritePdfFromPages(new List<PageItem>(_pages), outputFile);
                 }
+                CleanupWorkingPages("Export complete");
                 return new ApiResult { Ok = true, Message = "Saved PDF", Files = new List<string> { outputFile } };
             }
 
@@ -325,12 +326,14 @@ namespace KodakScannerApp
             {
                 var outputFile = Path.Combine(outputDir, baseName + ".tif");
                 ImageExporter.WriteMultipageTiff(files, outputFile);
+                CleanupWorkingPages("Export complete");
                 return new ApiResult { Ok = true, Message = "Saved TIFF", Files = new List<string> { outputFile } };
             }
 
             if (format == "jpg" || format == "jpeg" || format == "png")
             {
                 var outFiles = ImageExporter.WriteImageSet(files, outputDir, baseName, format);
+                CleanupWorkingPages("Export complete");
                 return new ApiResult { Ok = true, Message = "Saved images", Files = outFiles };
             }
 
@@ -364,15 +367,7 @@ namespace KodakScannerApp
 
         public void Clear()
         {
-            lock (_lock)
-            {
-                _pages.Clear();
-                _status.State = "idle";
-                _status.Message = "Ready";
-                _status.PagesScanned = 0;
-                _mode = "idle";
-                _editSourcePath = "";
-            }
+            CleanupWorkingPages("Ready");
         }
 
         public ApiResult DeleteFile(string id)
@@ -646,6 +641,105 @@ namespace KodakScannerApp
                 return System.Drawing.RotateFlipType.Rotate90FlipNone;
             }
             return null;
+        }
+
+        private void CleanupWorkingPages(string idleMessage)
+        {
+            List<string> paths;
+            List<string> folders;
+
+            lock (_lock)
+            {
+                paths = new List<string>();
+                folders = new List<string>();
+                foreach (var page in _pages)
+                {
+                    if (string.IsNullOrWhiteSpace(page.Path))
+                    {
+                        continue;
+                    }
+
+                    paths.Add(page.Path);
+                    var folder = Path.GetDirectoryName(page.Path);
+                    if (!string.IsNullOrWhiteSpace(folder) && !folders.Exists(x => string.Equals(x, folder, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        folders.Add(folder);
+                    }
+                }
+
+                _pages.Clear();
+                _status.State = "idle";
+                _status.Message = idleMessage;
+                _status.PagesScanned = 0;
+                _mode = "idle";
+                _editSourcePath = "";
+            }
+
+            foreach (var path in paths)
+            {
+                try
+                {
+                    if (IsUnderOutputRoot(path) && File.Exists(path))
+                    {
+                        File.Delete(path);
+                    }
+                }
+                catch { }
+            }
+
+            foreach (var folder in folders)
+            {
+                RemoveFolderIfEmpty(folder);
+            }
+        }
+
+        private void RemoveFolderIfEmpty(string folder)
+        {
+            if (string.IsNullOrWhiteSpace(folder))
+            {
+                return;
+            }
+
+            try
+            {
+                var current = Path.GetFullPath(folder);
+                var root = Path.GetFullPath(_outputRoot);
+                while (current.StartsWith(root, StringComparison.OrdinalIgnoreCase) &&
+                       !string.Equals(current, root, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!Directory.Exists(current))
+                    {
+                        break;
+                    }
+
+                    if (Directory.GetFiles(current).Length > 0 || Directory.GetDirectories(current).Length > 0)
+                    {
+                        break;
+                    }
+
+                    Directory.Delete(current);
+                    current = Path.GetDirectoryName(current);
+                    if (string.IsNullOrWhiteSpace(current))
+                    {
+                        break;
+                    }
+                }
+            }
+            catch { }
+        }
+
+        private static void TryDeleteDirectory(string folder)
+        {
+            if (string.IsNullOrWhiteSpace(folder) || !Directory.Exists(folder))
+            {
+                return;
+            }
+
+            try
+            {
+                Directory.Delete(folder, true);
+            }
+            catch { }
         }
     }
 }

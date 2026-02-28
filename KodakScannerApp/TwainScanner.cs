@@ -38,6 +38,7 @@ namespace KodakScannerApp
         {
             var files = new List<string>();
             if (settings == null) settings = new ScanSettings();
+            var scanSide = NormalizeScanSide(settings);
 
             var session = CreateSession();
             try
@@ -56,11 +57,12 @@ namespace KodakScannerApp
 
                 var done = new ManualResetEvent(false);
                 Exception error = null;
-                var page = 0;
+                var transferPage = 0;
+                var savedPage = 0;
 
                 session.TransferReady += (s, e) =>
                 {
-                    if (settings.MaxPages > 0 && page >= settings.MaxPages)
+                    if (settings.MaxPages > 0 && savedPage >= settings.MaxPages)
                     {
                         e.CancelAll = true;
                     }
@@ -79,8 +81,14 @@ namespace KodakScannerApp
                             if (stream == null) return;
                             using (var image = Image.FromStream(stream))
                             {
-                                page++;
-                                var basePath = Path.Combine(outputDir, "page_" + page.ToString("000"));
+                                transferPage++;
+                                if (!ShouldKeepPage(scanSide, transferPage))
+                                {
+                                    return;
+                                }
+
+                                savedPage++;
+                                var basePath = Path.Combine(outputDir, "page_" + savedPage.ToString("000"));
                                 var path = SaveImageWithFallback(image, basePath);
                                 files.Add(path);
                                 onPageSaved?.Invoke(path);
@@ -176,11 +184,9 @@ namespace KodakScannerApp
             var pixel = MapPixelType(settings.ColorMode);
             TrySetPixel(source.Capabilities.ICapPixelType, pixel);
 
-            var needsDuplexPath = scanSide == "back" || scanSide == "both";
-
             TrySetBool(source.Capabilities.CapFeederEnabled, BoolType.True);
-            TrySetBool(source.Capabilities.CapDuplexEnabled, needsDuplexPath ? BoolType.True : BoolType.False);
-            TrySetCameraSide(source.Capabilities.CapCameraSide, MapCameraSide(scanSide));
+            TrySetBool(source.Capabilities.CapDuplexEnabled, BoolType.True);
+            TryApplyCameraSide(source, scanSide);
 
             if (settings.MaxPages > 0)
             {
@@ -258,11 +264,38 @@ namespace KodakScannerApp
             return "front";
         }
 
-        private static CameraSide MapCameraSide(string scanSide)
+        private static bool ShouldKeepPage(string scanSide, int transferPage)
         {
-            if (string.Equals(scanSide, "back", StringComparison.OrdinalIgnoreCase)) return CameraSide.Bottom;
-            if (string.Equals(scanSide, "both", StringComparison.OrdinalIgnoreCase)) return CameraSide.Both;
-            return CameraSide.Top;
+            if (string.Equals(scanSide, "both", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            var isFrontPage = (transferPage % 2) == 1;
+            if (string.Equals(scanSide, "back", StringComparison.OrdinalIgnoreCase))
+            {
+                return !isFrontPage;
+            }
+
+            return isFrontPage;
+        }
+
+        private static void TryApplyCameraSide(DataSource source, string scanSide)
+        {
+            if (source == null || !source.IsOpen) return;
+
+            if (string.Equals(scanSide, "both", StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            if (string.Equals(scanSide, "back", StringComparison.OrdinalIgnoreCase))
+            {
+                TrySetCameraSide(source.Capabilities.CapCameraSide, CameraSide.Bottom);
+                return;
+            }
+
+            TrySetCameraSide(source.Capabilities.CapCameraSide, CameraSide.Top);
         }
 
         private static TWFix32 ToFix32(double value)

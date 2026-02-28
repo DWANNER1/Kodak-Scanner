@@ -1,6 +1,6 @@
 {
   "name": "kodak-scanner-desktop",
-  "version": "3.0.5",
+  "version": "4.0.0",
   "private": true,
   "main": "electron/main.js",
   "description": "Electron shell for Kodak Scanner UI",
